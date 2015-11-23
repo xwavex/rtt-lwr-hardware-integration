@@ -7,6 +7,10 @@ RTT component using a Gazebo model pointer to integrate RTT and Gazebo for the K
 
 `cd build`
 
+// for orocos plugins
+
+`export PKG_CONFIG_PATH=$insert-prefix-here/lib/pkgconfig`
+
 `cmake -Dgazebo_DIR=$insert-prefix-here/lib/cmake/gazebo -Dignition-math2_DIR=$insert-prefix-here/lib/cmake/ignition-math2 -DSDFormat_DIR=/homes$insert-prefix-here/lib/cmake/sdformat -DOROCOS-RTT_DIR=$insert-prefix-here/lib/cmake/orocos-rtt ..`
 
 `make -j 4`
