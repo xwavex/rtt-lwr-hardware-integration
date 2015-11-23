@@ -1,15 +1,71 @@
-RTT Kuka LWR 4+
-===================
-[![Build Status](https://travis-ci.org/kuka-isir/rtt_lwr.svg?branch=master)](https://travis-ci.org/kuka-isir/rtt_lwr)
+RTT LWR Gazebo
+==================
 
-## LWR Control Modes
+This package also includes a simple demonstration of the RTT Gazebo plugins
+and also uses ROS for launching gazebo.
 
-### Joint Impedance Control
-<img src="http://www.sciweavers.org/tex2img.php?eq=%5Ctau_%7Bcmd%7D%20%3D%20k_p%28q_%7BFRI%7D%20-%20q_%7Bmsr%7D%29%20-%20k_d.%5Cdot%7Bq%7D%20%2B%20%5Ctau_%7BFRI%7D%20%2B%20%20f_%7Bdynamics%7D%28q%2C%5Cdot%7Bq%7D%2C%5Cddot%7Bq%7D%29&bc=Transparent&fc=Black&im=png&fs=18&ff=modern&edit=0" align="center" border="0" alt="\tau_{cmd} = k_p(q_{FRI} - q_{msr}) - k_d.\dot{q} + \tau_{FRI} +  f_{dynamics}(q,\dot{q},\ddot{q})" width="590" height="29" />
+First, launch gazebo with the demo model:
+```shell
+roslaunch rtt_lwr_gazebo lwr_gazebo.launch
+```
 
-### Cartesian Impedance Control
-<img src="http://www.sciweavers.org/tex2img.php?eq=%5Ctau_%7Bcmd%7D%20%3D%20J%5ET%20%5Bk_c%28x_%7BFRI%7D%20-%20x_%7Bmsr%7D%29%20%20%2B%20F_%7BFRI%7D%5D%20-%20k_d.%5Cdot%7Bq%7D%20%2B%20f_%7Bdynamics%7D%28q%2C%5Cdot%7Bq%7D%2C%5Cddot%7Bq%7D%29&bc=Transparent&fc=Black&im=png&fs=18&ff=modern&edit=0" align="center" border="0" alt="\tau_{cmd} = J^T [k_c(x_{FRI} - x_{msr})  + F_{FRI}] - k_d.\dot{q} + f_{dynamics}(q,\dot{q},\ddot{q})" width="642" height="31" />
+Then, in another shell, you can launch the rtt\_gazebo\_console:
+```shell
+rosrun rtt_gazebo_console console
+```
 
-### Control Software Architecture
+This will display something similar to this:
+```shell
+   Switched to : console_deployer
 
-[![Kuka LWR 4+ Control Software Architecture](https://docs.google.com/drawings/d/1NT4zMJfsXPfwbvzINFyB0WleWip_2uDBInXyNyzadrM/pub?w=1354&amp)](https://goo.gl/c7EvvT)
+  This console reader allows you to browse and manipulate TaskContexts.
+  You can type in an operation, expression, create or change variables.
+  (type 'help' for instructions and 'ls' for context info)
+
+    TAB completion and HISTORY is available ('bash' like)
+
+    Use 'Ctrl-D' or type 'quit' to exit this program.
+
+console_deployer [S]> 
+```
+
+Once you've loaded up the console, you can `cd` into the demo component:
+```shell
+cd gazebo
+cd sevenbot
+```
+
+Then you can list some of the debug attributes:
+```
+ls debug
+```
+
+This will display something simiar to:
+```shell
+ Listing Service debug[R] :
+
+ Configuration Properties: (none)
+
+ Provided Interface:
+  Attributes   : 
+     double time_rtt       = 6.938               
+     double time_gz        = 6.938               
+        int steps_rtt      = 6891                
+        int steps_gz       = 6771                
+        int n_joints       = 8                   
+      array joint_pos      = { [-2.78448e-06, 7.2723e-06, 6.19356e-06, -5.0639e-06, 3.9167e-06, -2.79475e-06, 1.73491e-06, 8.32204e-07 ], size = 8, capacity = 8 }
+      array joint_command  = { [3.06293e-06, 8.01095e-06, -6.80253e-06, 5.57588e-06, -4.30829e-06, 3.07115e-06, -1.90659e-06, -9.20536e-07 ], size = 8, capacity = 8 }
+
+  Operations      : (none)
+
+ Data Flow Ports: (none)
+
+ Services: 
+(none)
+```
+
+You can also change the gains of the joint-level PD effort control:
+```
+kp = 0.5
+kd = 10
+```
