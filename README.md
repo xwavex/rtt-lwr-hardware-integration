@@ -17,7 +17,7 @@ RTT component using a Gazebo model pointer to integrate RTT and Gazebo for the K
 
 // include RTT component in search path
 
-`RTT_COMPONENT_PATH=$RTT_COMPONENT_PATH:$include-path-to/rtt-gazebo-lwr-integration/build/orocos`
+`export RTT_COMPONENT_PATH=$RTT_COMPONENT_PATH:$include-path-to/rtt-gazebo-lwr-integration/build/orocos`
 
 ## TODO
 
