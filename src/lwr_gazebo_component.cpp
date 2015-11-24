@@ -190,9 +190,9 @@ public:
 			jnt_vel_[j] = gazebo_joints_[j + nb_static_joints]->GetVelocity(0);
 			jnt_trq_[j] = gazebo_joints_[j + nb_static_joints]->GetForce(0u);
 
-			RTT::log(RTT::Error) << "jnt[" << j << "]: jnt_pos_: "
-					<< jnt_pos_[j] << ", jnt_vel_: " << jnt_vel_[j]
-					<< ", jnt_trq_" << jnt_trq_[j] << RTT::endlog();
+//			RTT::log(RTT::Error) << "jnt[" << j << "]: jnt_pos_: "
+//					<< jnt_pos_[j] << ", jnt_vel_: " << jnt_vel_[j]
+//					<< ", jnt_trq_" << jnt_trq_[j] << RTT::endlog();
 
 		}
 
