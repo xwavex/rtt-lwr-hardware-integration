@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(rtt_lwr_gazebo)
+project(rtt-gazebo-lwr-integration)
 set(CMAKE_BUILD_TYPE Release)
 list(APPEND CMAKE_CXX_FLAGS "-std=c++11")
 ## Find catkin macros and libraries
@@ -32,6 +32,24 @@ message(STATUS "GAZEBO_LIBRARIES: ${GAZEBO_LIBRARIES}")
 set ( CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/eigen/  )
 find_package(Eigen REQUIRED)
 find_package(Boost COMPONENTS thread REQUIRED)
+
+find_package(RCI REQUIRED)
+message(STATUS "RCI version: ${RCI_VERSION}")	
+include_directories(BEFORE SYSTEM ${RCI_INCLUDE_DIRS})	
+add_definitions(${RCI_CFLAGS})
+link_directories(${RCI_LIBRARY_DIR})
+
+find_package(RSC REQUIRED)
+message(STATUS "RSC version: ${RSC_VERSION}")	
+include_directories(BEFORE SYSTEM ${RSC_INCLUDE_DIRS})	
+add_definitions(${RSC_CFLAGS})
+link_directories(${RSC_LIBRARY_DIR})
+
+find_package(NemoMath REQUIRED)
+message(STATUS "NemoMath version: ${NemoMath_VERSION}")	
+include_directories(BEFORE SYSTEM ${NemoMath_INCLUDE_DIRS})	
+add_definitions(${NemoMath_CFLAGS})
+link_directories(${NemoMath_LIBRARY_DIR})
 
 #find_package(orocos_kdl REQUIRED)
 
@@ -73,6 +91,9 @@ target_link_libraries(lwr_gazebo
   ${OROCOS-RTT_RTT-TRANSPORT-CORBA_LIBRARY}
   ${OROCOS-RTT_TYPEKIT_LIBRARIES}
   ${USE_OROCOS_LIBRARIES}
-  ${Boost_LIBRARIES})
+  ${Boost_LIBRARIES}
+  ${NemoMath_LIBRARIES}
+  ${RSC_LIBRARIES}
+  ${RCI_LIBRARIES})
 
 orocos_generate_package()
