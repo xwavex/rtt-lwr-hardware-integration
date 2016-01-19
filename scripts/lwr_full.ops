@@ -1,0 +1,78 @@
+// import everything we need
+import("RTTLWRSynchronizer")
+import("RTTController")
+
+// #######------- lwr_gazebo : LWRGazeboComponent -------#######
+// lwr_gazebo aka LWRGazeboComponent is launched via the world deployer plugin.
+// scheduler and period still needs to be set
+setActivity("lwr_gazebo",0.001,HighestPriority,ORO_SCHED_RT)
+
+lwr_gazebo.configure()
+lwr_gazebo.start()
+
+
+
+// #######------- lwr_synchronizer : RTTLWRSynchronizer -------#######
+loadComponent("lwr_synchronizer","RTTLWRSynchronizer");
+setActivity("lwr_synchronizer",0.001,HighestPriority,ORO_SCHED_RT)
+
+
+
+// #######------- lwr_trq_controller : RTTController -------#######
+loadComponent("lwr_trq_controller","RTTController");
+setActivity("lwr_trq_controller",0.001,HighestPriority,ORO_SCHED_RT)
+
+
+
+// #######------- Connections -------#######
+
+// # Connect Synchronizer to Gazebo
+var ConnPolicy cp_s_g;
+cp_s_g.type = DATA;
+cp_s_g.lock_policy = LOCK_FREE; //LOCK_FREE // LOCKED
+
+connect("lwr_synchronizer.cmdJntPos","lwr_gazebo.JointPositionCommand",cp_s_g);
+connect("lwr_synchronizer.cmdJntTrq","lwr_gazebo.JointTorqueCommand",cp_s_g);
+// cmdJntVel missing here TODO
+
+connect("lwr_gazebo.JointPosition","lwr_synchronizer.currJntPos",cp_s_g);
+connect("lwr_gazebo.JointTorque","lwr_synchronizer.currJntTrq",cp_s_g);
+//connect("lwr_gazebo.JointVelocity","lwr_synchronizer.currJntVel",cp_s_g);
+
+
+lwr_synchronizer.configure()
+lwr_trq_controller.configure()
+
+// # important for custom connections
+connectPeers("lwr_synchronizer", "lwr_trq_controller")
+
+// # Connect Controller to ResourceNodes (living inside the Synchronizer)
+var ConnPolicy cp_c_s;
+cp_c_s.type = DATA;
+cp_c_s.lock_policy = LOCK_FREE; //LOCK_FREE // LOCKED
+
+// ### joint_0 ###
+lwr_synchronizer.connectPortTo("lwr_synchronizer.joint_0.OUTPUT_JntTorq","lwr_trq_controller.currJntTrq",cp_c_s);
+lwr_synchronizer.connectPortTo("lwr_trq_controller.cmdJntTrq","lwr_synchronizer.joint_0.INPUT_JntTrq",cp_c_s);
+
+// ### joint_1 ###
+lwr_synchronizer.connectPortTo("lwr_trq_controller.cmdJntTrq_1","lwr_synchronizer.joint_1.INPUT_JntTrq",cp_c_s);
+
+// ### joint_2 ###
+lwr_synchronizer.connectPortTo("lwr_trq_controller.cmdJntTrq_2","lwr_synchronizer.joint_2.INPUT_JntTrq",cp_c_s);
+
+// ### joint_3 ###
+lwr_synchronizer.connectPortTo("lwr_trq_controller.cmdJntTrq_3","lwr_synchronizer.joint_3.INPUT_JntTrq",cp_c_s);
+
+// ### joint_4 ###
+lwr_synchronizer.connectPortTo("lwr_trq_controller.cmdJntTrq_4","lwr_synchronizer.joint_4.INPUT_JntTrq",cp_c_s);
+
+// ### joint_5 ###
+lwr_synchronizer.connectPortTo("lwr_trq_controller.cmdJntTrq_5","lwr_synchronizer.joint_5.INPUT_JntTrq",cp_c_s);
+
+// ### joint_6 ###
+lwr_synchronizer.connectPortTo("lwr_trq_controller.cmdJntTrq_6","lwr_synchronizer.joint_6.INPUT_JntTrq",cp_c_s);
+
+
+lwr_synchronizer.start()
+lwr_trq_controller.start()
