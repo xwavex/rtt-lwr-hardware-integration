@@ -6,6 +6,8 @@
 #include <rtt/Port.hpp>
 #include <rtt/TaskContext.hpp>
 #include <rtt/Logger.hpp>
+#include <rtt/Property.hpp>
+#include <rtt/Attribute.hpp>
 
 //#include <Eigen/Dense>
 #include <boost/graph/graph_concepts.hpp>
@@ -61,6 +63,8 @@ public:
 		this->provides("debug")->addAttribute("steps_gz", steps_gz_);
 		this->provides("debug")->addAttribute("period_sim", period_sim_);
 		this->provides("debug")->addAttribute("period_wall", period_wall_);
+
+		this->provides("misc")->addAttribute("urdf_string", urdf_string);
 	}
 
 	//! Called from gazebo
@@ -111,9 +115,6 @@ public:
 		RTT::log(RTT::Warning) << "Gazebo model found " << joints_idx.size()
 				<< " joints " << RTT::endlog();
 
-		std::cout << "Gazebo model found " << joints_idx.size() << " joints "
-				<< RTT::endlog();
-
 		jnt_pos_cmd_ = rci::JointAngles::create(7, 0.0);
 		jnt_pos_ = rci::JointAngles::create(7, 0.0);
 
@@ -131,6 +132,7 @@ public:
 
 		last_update_time_ = RTT::os::TimeService::Instance()->getNSecs(); //rtt_rosclock::rtt_now(); // still needed??
 		RTT::log(RTT::Warning) << "Done configuring gazebo" << RTT::endlog();
+
 		return true;
 	}
 
@@ -448,6 +450,9 @@ protected:
 	int nb_static_joints;
 
 	int nb_cmd_received_;bool sync_with_cmds_;
+
+	// contains the urdf string for the associated model.
+	std::string urdf_string;
 };
 
 ORO_LIST_COMPONENT_TYPE(LWRGazeboComponent)
