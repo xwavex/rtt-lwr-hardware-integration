@@ -1,4 +1,5 @@
 // import everything we need
+import("RTTGazeboLWRSimulation")
 import("RTTLWRSynchronizer")
 import("RTTController")
 
@@ -11,11 +12,16 @@ lwr_gazebo.configure()
 lwr_gazebo.start()
 
 
+// #######------- lwr_simulation : RTTGazeboLWRSimulation -------#######
+loadComponent("lwr_simulation", "RTTGazeboLWRSimulation")
+// provide urdf for kdl chain generation
+lwr_simulation.parseURDFforKDL(lwr_gazebo.misc.urdf_string)
+setActivity("lwr_simulation",0.001,HighestPriority,ORO_SCHED_RT)
+
 
 // #######------- lwr_synchronizer : RTTLWRSynchronizer -------#######
 loadComponent("lwr_synchronizer","RTTLWRSynchronizer");
 setActivity("lwr_synchronizer",0.001,HighestPriority,ORO_SCHED_RT)
-
 
 
 // #######------- lwr_trq_controller : RTTController -------#######
@@ -26,19 +32,41 @@ setActivity("lwr_trq_controller",0.001,HighestPriority,ORO_SCHED_RT)
 
 // #######------- Connections -------#######
 
-// # Connect Synchronizer to Gazebo
+// # Connect Simulation to Gazebo
 var ConnPolicy cp_s_g;
 cp_s_g.type = DATA;
 cp_s_g.lock_policy = LOCK_FREE; //LOCK_FREE // LOCKED
 
-connect("lwr_synchronizer.cmdJntPos","lwr_gazebo.JointPositionCommand",cp_s_g);
-connect("lwr_synchronizer.cmdJntTrq","lwr_gazebo.JointTorqueCommand",cp_s_g);
+connect("lwr_simulation.JointPositionGazeboCommand","lwr_gazebo.JointPositionCommand",cp_s_g);
+connect("lwr_simulation.JointTorqueGazeboCommand","lwr_gazebo.JointTorqueCommand",cp_s_g);
+// JointVelocityGazeboCommand missing here TODO
+
+connect("lwr_gazebo.JointPosition","lwr_simulation.JointPositionGazebo",cp_s_g);
+connect("lwr_gazebo.JointTorque","lwr_simulation.JointTorqueGazebo",cp_s_g);
+connect("lwr_gazebo.JointVelocity","lwr_simulation.JointVelocityGazebo",cp_s_g);
+
+
+// # Connect Synchronizer to Simulation
+var ConnPolicy cp_s_s;
+cp_s_s.type = DATA;
+cp_s_s.lock_policy = LOCK_FREE; //LOCK_FREE // LOCKED
+
+connect("lwr_synchronizer.cmdJntPos","lwr_simulation.JointPositionCommand",cp_s_s);
+connect("lwr_synchronizer.cmdJntTrq","lwr_simulation.JointTorqueCommand",cp_s_s);
 // cmdJntVel missing here TODO
 
-connect("lwr_gazebo.JointPosition","lwr_synchronizer.currJntPos",cp_s_g);
-connect("lwr_gazebo.JointTorque","lwr_synchronizer.currJntTrq",cp_s_g);
-//connect("lwr_gazebo.JointVelocity","lwr_synchronizer.currJntVel",cp_s_g);
+connect("lwr_simulation.JointPosition","lwr_synchronizer.currJntPos",cp_s_s);
+connect("lwr_simulation.JointTorque","lwr_synchronizer.currJntTrq",cp_s_s);
+//connect("lwr_simulation.JointVelocity","lwr_synchronizer.currJntVel",cp_s_s);
 
+lwr_simulation.configure()
+lwr_simulation.setControlMode(0,"FRI_CTRL_DIRECT_TORQUE")
+lwr_simulation.setControlMode(1,"FRI_CTRL_DIRECT_TORQUE")
+lwr_simulation.setControlMode(2,"FRI_CTRL_DIRECT_TORQUE")
+lwr_simulation.setControlMode(3,"FRI_CTRL_DIRECT_TORQUE")
+lwr_simulation.setControlMode(4,"FRI_CTRL_DIRECT_TORQUE")
+lwr_simulation.setControlMode(5,"FRI_CTRL_DIRECT_TORQUE")
+lwr_simulation.setControlMode(6,"FRI_CTRL_DIRECT_TORQUE")
 
 lwr_synchronizer.configure()
 lwr_trq_controller.configure()
@@ -73,6 +101,6 @@ lwr_synchronizer.connectPortTo("lwr_trq_controller.cmdJntTrq_5","lwr_synchronize
 // ### joint_6 ###
 lwr_synchronizer.connectPortTo("lwr_trq_controller.cmdJntTrq_6","lwr_synchronizer.joint_6.INPUT_JntTrq",cp_c_s);
 
-
+lwr_simulation.start()
 lwr_synchronizer.start()
 lwr_trq_controller.start()
