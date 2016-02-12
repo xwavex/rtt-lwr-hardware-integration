@@ -57,7 +57,7 @@ connect("lwr_synchronizer.cmdJntTrq","lwr_simulation.JointTorqueCommand",cp_s_s)
 
 connect("lwr_simulation.JointPosition","lwr_synchronizer.currJntPos",cp_s_s);
 connect("lwr_simulation.JointTorque","lwr_synchronizer.currJntTrq",cp_s_s);
-//connect("lwr_simulation.JointVelocity","lwr_synchronizer.currJntVel",cp_s_s);
+connect("lwr_simulation.JointVelocity","lwr_synchronizer.currJntVel",cp_s_s);
 
 lwr_simulation.configure()
 lwr_simulation.setControlMode(0,"FRI_CTRL_DIRECT_TORQUE")
@@ -81,6 +81,7 @@ cp_c_s.lock_policy = LOCK_FREE; //LOCK_FREE // LOCKED
 
 // ### joint_0 ###
 lwr_synchronizer.connectPortTo("lwr_synchronizer.joint_0.OUTPUT_JntTorq","lwr_trq_controller.currJntTrq",cp_c_s);
+
 lwr_synchronizer.connectPortTo("lwr_trq_controller.cmdJntTrq","lwr_synchronizer.joint_0.INPUT_JntTrq",cp_c_s);
 
 // ### joint_1 ###

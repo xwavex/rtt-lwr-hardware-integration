@@ -22,6 +22,8 @@
 #include <nemo/Vector.h>
 #include <nemo/Mapping.h>
 
+#define l(lvl) RTT::log(lvl) << "[" << this->getName() << "] "
+
 class LWRGazeboComponent: public RTT::TaskContext {
 public:
 
@@ -41,15 +43,20 @@ public:
 //		this->addOperation("setLinkGravityMode",&LWRGazeboComponent::setLinkGravityMode,this,RTT::ClientThread); // TODO
 
 		this->ports()->addPort("JointPositionCommand",
-				port_JointPositionCommand).doc("");
+				port_JointPositionCommand).doc(
+				"Input for JointPosition-cmds from Orocos to Gazebo world.");
 		this->ports()->addPort("JointTorqueCommand", port_JointTorqueCommand).doc(
-				"");
+				"Input for JointTorque-cmds from Orocos to Gazebo world.");
 		this->ports()->addPort("JointVelocityCommand",
-				port_JointVelocityCommand).doc("");
+				port_JointVelocityCommand).doc(
+				"Input for JointVelocity-cmds from Orocos to Gazebo world.");
 
-		this->ports()->addPort("JointVelocity", port_JointVelocity).doc("");
-		this->ports()->addPort("JointTorque", port_JointTorque).doc("");
-		this->ports()->addPort("JointPosition", port_JointPosition).doc("");
+		this->ports()->addPort("JointVelocity", port_JointVelocity).doc(
+				"Output for JointVelocity-fbs from Gazebo to Orocos world.");
+		this->ports()->addPort("JointTorque", port_JointTorque).doc(
+				"Output for JointTorques-fbs from Gazebo to Orocos world.");
+		this->ports()->addPort("JointPosition", port_JointPosition).doc(
+				"Output for JointPosition-fbs from Gazebo to Orocos world.");
 
 		this->provides("debug")->addAttribute("jnt_pos", jnt_pos_);
 		this->provides("debug")->addAttribute("jnt_vel", jnt_vel_);
@@ -92,6 +99,9 @@ public:
 			// NOTE: Remove fake fixed joints (revolute with upper==lower==0
 			// NOTE: This is not used anymore thanks to <disableFixedJointLumping>
 			// Gazebo option (ati_joint is fixed but gazebo can use it )
+
+//			RTT::log(RTT::Warning) << "Found joint [" << name << "] idx:"
+//								<< idx << RTT::endlog();
 
 			if ((*jit)->GetLowerLimit(0u) == (*jit)->GetUpperLimit(0u)) {
 				RTT::log(RTT::Warning) << "Not adding (fake) fixed joint ["
@@ -184,38 +194,38 @@ public:
 		wall_time_ = (double) gz_wall_time.sec
 				+ ((double) gz_wall_time.nsec) * 1E-9;
 
-		RTT::log(RTT::Error) << "joints_idx.size() = " << joints_idx.size()
-				<< RTT::endlog();
-
-		RTT::log(RTT::Error) << "model = " << model->GetJointCount()
-				<< RTT::endlog();
+//		RTT::log(RTT::Error) << "joints_idx.size() = " << joints_idx.size()
+//				<< RTT::endlog();
+//
+//		RTT::log(RTT::Error) << "model = " << model->GetJointCount()
+//				<< RTT::endlog();
 
 		// Get state
 		for (unsigned j = 0; j < joints_idx.size(); j++) {
-
-			RTT::log(RTT::Error) << "joints_idx j : " << j << " = "
-					<< joints_idx[j] << RTT::endlog();
-
-			RTT::log(RTT::Error) << "rad j1 = "
-					<< gazebo_joints_[joints_idx[j]]->GetName()
-					<< RTT::endlog();
-			RTT::log(RTT::Error) << "rad j2 = "
-					<< model->GetJoints()[joints_idx[j]]->GetName()
-					<< RTT::endlog();
-
-			RTT::log(RTT::Error) << "rad j2 = "
-					<< model->GetJoints()[joints_idx[j]]->GetAngle(0).Radian()
-					<< RTT::endlog();
+//			RTT::log(RTT::Error) << "joints_idx j : " << j << " = "
+//					<< joints_idx[j] << RTT::endlog();
+//
+//			RTT::log(RTT::Error) << "rad j1 = "
+//					<< gazebo_joints_[joints_idx[j]]->GetName()
+//					<< RTT::endlog();
+//			RTT::log(RTT::Error) << "rad j2 = "
+//					<< model->GetJoints()[joints_idx[j]]->GetName()
+//					<< RTT::endlog();
+//
+//			RTT::log(RTT::Error) << "rad j2 = "
+//					<< model->GetJoints()[joints_idx[j]]->GetAngle(0).Radian()
+//					<< RTT::endlog();
 
 			jnt_pos_->setFromRad(j,
 					gazebo_joints_[joints_idx[j]]->GetAngle(0).Radian());
 			jnt_vel_->setFromRad_s(j,
 					gazebo_joints_[joints_idx[j]]->GetVelocity(0));
-			jnt_trq_->setFromNm(j, gazebo_joints_[joints_idx[j]]->GetForce(0u));
+			jnt_trq_->setFromNm(j, gazebo_joints_[joints_idx[j]]->GetForce(0u)); // perhaps change to GetForceTorque
 
-			RTT::log(RTT::Info) << "GetState: jnt[" << j << "]: jnt_pos_: "
-					<< jnt_pos_->rad(j) << ", jnt_vel_: " << jnt_vel_->rad_s(j)
-					<< ", jnt_trq_" << jnt_trq_->Nm(j) << RTT::endlog();
+
+//			RTT::log(RTT::Info) << "GetState: jnt[" << j << "]: jnt_pos_: "
+//					<< jnt_pos_->rad(j) << ", jnt_vel_: " << jnt_vel_->rad_s(j)
+//					<< ", jnt_trq_" << jnt_trq_->Nm(j) << RTT::endlog();
 
 		}
 		RTT::log(RTT::Error) << "\n\n" << RTT::endlog();
@@ -253,12 +263,12 @@ public:
 				++it) {
 			it->first->SetGravityMode(it->second);
 		}
-
-		RTT::log(RTT::Error) << "Gazebo data_fs : " << data_fs << ", ts: "
-				<< data_timestamp << ", last ts: " << last_data_timestamp
-				<< ", steps rtt: " << steps_rtt_ << ", last steps: "
-				<< last_steps_rtt_ << ", brakes: " << set_brakes
-				<< RTT::endlog();
+//
+//		RTT::log(RTT::Error) << "Gazebo data_fs : " << data_fs << ", ts: "
+//				<< data_timestamp << ", last ts: " << last_data_timestamp
+//				<< ", steps rtt: " << steps_rtt_ << ", last steps: "
+//				<< last_steps_rtt_ << ", brakes: " << set_brakes
+//				<< RTT::endlog();
 
 		// Copy Current joint pos in case of brakes
 		if (!set_brakes)
@@ -270,7 +280,7 @@ public:
 			RTT::log(RTT::Error) << "set_new_pos = true" << RTT::endlog();
 			// Update specific joints regarding cmd
 			for (unsigned j = 0; j < joints_idx.size(); j++) {
-				gazebo_joints_[j + nb_static_joints]->SetAngle(0,
+				gazebo_joints_[joints_idx[j]]->SetAngle(0,
 						jnt_pos_cmd_->rad(j));
 				jnt_pos_brakes_->setFromRad(j, jnt_pos_cmd_->rad(j));
 			}
@@ -280,15 +290,14 @@ public:
 
 		} else if (set_brakes) {
 			for (unsigned j = 0; j < joints_idx.size(); j++)
-				gazebo_joints_[j + nb_static_joints]->SetAngle(0,
+				gazebo_joints_[joints_idx[j]]->SetAngle(0,
 						jnt_pos_brakes_->rad(j));
 
 		} else {
 			// Write command
 			// Update specific joints regarding cmd
 			for (unsigned j = 0; j < joints_idx.size(); j++) {
-				gazebo_joints_[j + nb_static_joints]->SetForce(0,
-						jnt_trq_cmd_->Nm(j));
+				gazebo_joints_[joints_idx[j]]->SetForce(0, jnt_trq_cmd_->Nm(j));
 				RTT::log(RTT::Error) << "set Force: " << j << ", "
 						<< jnt_trq_cmd_->Nm(j) << RTT::endlog();
 			}
@@ -329,16 +338,10 @@ public:
 
 		jnt_pos_fs = port_JointPositionCommand.read(jnt_pos_cmd_);
 
-		//Use only for testing
-//		jnt_pos_fs = RTT::NewData;
-//		jnt_pos_cmd_.clear();
-//		jnt_pos_cmd_.push_back(0.8);
-//		jnt_pos_cmd_.push_back(0.8);
-//		jnt_pos_cmd_.push_back(0.8);
-//		jnt_pos_cmd_.push_back(0.8);
-//		jnt_pos_cmd_.push_back(0.8);
-//		jnt_pos_cmd_.push_back(0.8);
-//		jnt_pos_cmd_.push_back(0.8);
+//		if (data_fs == RTT::NewData)
+//			for (int i = 0; i < jnt_trq_cmd_->getDimension(); i++) {
+//				l(RTT::Warning)<< "i: " << i << " = " << jnt_trq_cmd_->Nm(i) << RTT::endlog();
+//			}
 
 		if (jnt_pos_fs == RTT::NewData) {
 			//set_new_pos = true; // TODO remove!
@@ -360,17 +363,6 @@ public:
 
 		write_duration_ = RTT::os::TimeService::Instance()->secondsSince(
 				write_start);
-
-//		//test
-//		data_fs = RTT::NewData;
-//		jnt_trq_cmd_.clear();
-//		jnt_trq_cmd_.push_back(0.8);
-//		jnt_trq_cmd_.push_back(0.8);
-//		jnt_trq_cmd_.push_back(0.8);
-//		jnt_trq_cmd_.push_back(0.8);
-//		jnt_trq_cmd_.push_back(0.8);
-//		jnt_trq_cmd_.push_back(0.8);
-//		jnt_trq_cmd_.push_back(0.8);
 
 		switch (data_fs) {
 		case RTT::OldData:
