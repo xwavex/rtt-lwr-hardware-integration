@@ -1,6 +1,6 @@
 // import everything we need
 import("RTTGazeboLWRSimulation")
-import("RTTLWRSynchronizer")
+import("RCIRTTIntegration")
 import("RTTController")
 
 // #######------- lwr_gazebo : LWRGazeboComponent -------#######
@@ -24,9 +24,21 @@ loadComponent("lwr_synchronizer","RTTLWRSynchronizer");
 setActivity("lwr_synchronizer",0.001,HighestPriority,ORO_SCHED_RT)
 
 
-// #######------- lwr_trq_controller : RTTController -------#######
-loadComponent("lwr_trq_controller","RTTController");
+// #######------- lwr_trq_controller : RTTTrqController -------#######
+loadComponent("lwr_trq_controller","RTTTrqController");
 setActivity("lwr_trq_controller",0.001,HighestPriority,ORO_SCHED_RT)
+
+
+// #######------- lwr_collector : RTTLWRCollector -------#######
+loadComponent("lwr_collector", "RTTLWRCollector")
+setActivity("lwr_collector",0.001,HighestPriority,ORO_SCHED_RT)
+lwr_collector.configure()
+
+
+// #######------- lwr_splitter : RTTLWRSplitter -------#######
+loadComponent("lwr_splitter", "RTTLWRSplitter")
+setActivity("lwr_splitter",0.001,HighestPriority,ORO_SCHED_RT)
+lwr_splitter.configure()
 
 
 
@@ -72,35 +84,113 @@ lwr_synchronizer.configure()
 lwr_trq_controller.configure()
 
 // # important for custom connections
-connectPeers("lwr_synchronizer", "lwr_trq_controller")
+connectPeers("lwr_synchronizer", "lwr_splitter")
+connectPeers("lwr_synchronizer", "lwr_collector")
 
-// # Connect Controller to ResourceNodes (living inside the Synchronizer)
-var ConnPolicy cp_c_s;
-cp_c_s.type = DATA;
-cp_c_s.lock_policy = LOCK_FREE; //LOCK_FREE // LOCKED
+
+// # connect lwr_synchronizer and lwr_splitter
+var ConnPolicy cp_s_splitter;
+cp_s_splitter.type = DATA;
+cp_s_splitter.lock_policy = LOCK_FREE;
+
+// TODO add impedance!
 
 // ### joint_0 ###
-lwr_synchronizer.connectPortTo("lwr_synchronizer.joint_0.OUTPUT_JntTorq","lwr_trq_controller.currJntTrq",cp_c_s);
-
-lwr_synchronizer.connectPortTo("lwr_trq_controller.cmdJntTrq","lwr_synchronizer.joint_0.INPUT_JntTrq",cp_c_s);
+lwr_synchronizer.connectPortTo("lwr_splitter.JointAngles_Splitter.Splitted_Out_0","lwr_synchronizer.joint_0.INPUT_JntCmd",cp_s_splitter);
+lwr_synchronizer.connectPortTo("lwr_splitter.JointTorques_Splitter.Splitted_Out_0","lwr_synchronizer.joint_0.INPUT_JntTrq",cp_s_splitter);
 
 // ### joint_1 ###
-lwr_synchronizer.connectPortTo("lwr_trq_controller.cmdJntTrq_1","lwr_synchronizer.joint_1.INPUT_JntTrq",cp_c_s);
+lwr_synchronizer.connectPortTo("lwr_splitter.JointAngles_Splitter.Splitted_Out_1","lwr_synchronizer.joint_1.INPUT_JntCmd",cp_s_splitter);
+lwr_synchronizer.connectPortTo("lwr_splitter.JointTorques_Splitter.Splitted_Out_1","lwr_synchronizer.joint_1.INPUT_JntTrq",cp_s_splitter);
 
 // ### joint_2 ###
-lwr_synchronizer.connectPortTo("lwr_trq_controller.cmdJntTrq_2","lwr_synchronizer.joint_2.INPUT_JntTrq",cp_c_s);
+lwr_synchronizer.connectPortTo("lwr_splitter.JointAngles_Splitter.Splitted_Out_2","lwr_synchronizer.joint_2.INPUT_JntCmd",cp_s_splitter);
+lwr_synchronizer.connectPortTo("lwr_splitter.JointTorques_Splitter.Splitted_Out_2","lwr_synchronizer.joint_2.INPUT_JntTrq",cp_s_splitter);
 
 // ### joint_3 ###
-lwr_synchronizer.connectPortTo("lwr_trq_controller.cmdJntTrq_3","lwr_synchronizer.joint_3.INPUT_JntTrq",cp_c_s);
+lwr_synchronizer.connectPortTo("lwr_splitter.JointAngles_Splitter.Splitted_Out_3","lwr_synchronizer.joint_3.INPUT_JntCmd",cp_s_splitter);
+lwr_synchronizer.connectPortTo("lwr_splitter.JointTorques_Splitter.Splitted_Out_3","lwr_synchronizer.joint_3.INPUT_JntTrq",cp_s_splitter);
 
 // ### joint_4 ###
-lwr_synchronizer.connectPortTo("lwr_trq_controller.cmdJntTrq_4","lwr_synchronizer.joint_4.INPUT_JntTrq",cp_c_s);
+lwr_synchronizer.connectPortTo("lwr_splitter.JointAngles_Splitter.Splitted_Out_4","lwr_synchronizer.joint_4.INPUT_JntCmd",cp_s_splitter);
+lwr_synchronizer.connectPortTo("lwr_splitter.JointTorques_Splitter.Splitted_Out_4","lwr_synchronizer.joint_4.INPUT_JntTrq",cp_s_splitter);
 
 // ### joint_5 ###
-lwr_synchronizer.connectPortTo("lwr_trq_controller.cmdJntTrq_5","lwr_synchronizer.joint_5.INPUT_JntTrq",cp_c_s);
+lwr_synchronizer.connectPortTo("lwr_splitter.JointAngles_Splitter.Splitted_Out_5","lwr_synchronizer.joint_5.INPUT_JntCmd",cp_s_splitter);
+lwr_synchronizer.connectPortTo("lwr_splitter.JointTorques_Splitter.Splitted_Out_5","lwr_synchronizer.joint_5.INPUT_JntTrq",cp_s_splitter);
 
 // ### joint_6 ###
-lwr_synchronizer.connectPortTo("lwr_trq_controller.cmdJntTrq_6","lwr_synchronizer.joint_6.INPUT_JntTrq",cp_c_s);
+lwr_synchronizer.connectPortTo("lwr_splitter.JointAngles_Splitter.Splitted_Out_6","lwr_synchronizer.joint_6.INPUT_JntCmd",cp_s_splitter);
+lwr_synchronizer.connectPortTo("lwr_splitter.JointTorques_Splitter.Splitted_Out_6","lwr_synchronizer.joint_6.INPUT_JntTrq",cp_s_splitter);
+
+
+
+// # connect lwr_synchronizer and lwr_collector
+var ConnPolicy cp_s_collector;
+cp_s_collector.type = DATA;
+cp_s_collector.lock_policy = LOCK_FREE;
+
+// ### joint_0 ###
+lwr_synchronizer.connectPortTo("lwr_synchronizer.joint_0.OUTPUT_JntPos","lwr_collector.JointAngles_Collector.Collect_In_0",cp_s_collector);
+lwr_synchronizer.connectPortTo("lwr_synchronizer.joint_0.OUTPUT_JntVel","lwr_collector.JointVelocities_Collector.Collect_In_0",cp_s_collector);
+lwr_synchronizer.connectPortTo("lwr_synchronizer.joint_0.OUTPUT_JntTorq","lwr_collector.JointTorques_Collector.Collect_In_0",cp_s_collector);
+
+// ### joint_1 ###
+lwr_synchronizer.connectPortTo("lwr_synchronizer.joint_1.OUTPUT_JntPos","lwr_collector.JointAngles_Collector.Collect_In_1",cp_s_collector);
+lwr_synchronizer.connectPortTo("lwr_synchronizer.joint_1.OUTPUT_JntVel","lwr_collector.JointVelocities_Collector.Collect_In_1",cp_s_collector);
+lwr_synchronizer.connectPortTo("lwr_synchronizer.joint_1.OUTPUT_JntTorq","lwr_collector.JointTorques_Collector.Collect_In_1",cp_s_collector);
+
+// ### joint_2 ###
+lwr_synchronizer.connectPortTo("lwr_synchronizer.joint_2.OUTPUT_JntPos","lwr_collector.JointAngles_Collector.Collect_In_2",cp_s_collector);
+lwr_synchronizer.connectPortTo("lwr_synchronizer.joint_2.OUTPUT_JntVel","lwr_collector.JointVelocities_Collector.Collect_In_2",cp_s_collector);
+lwr_synchronizer.connectPortTo("lwr_synchronizer.joint_2.OUTPUT_JntTorq","lwr_collector.JointTorques_Collector.Collect_In_2",cp_s_collector);
+
+// ### joint_3 ###
+lwr_synchronizer.connectPortTo("lwr_synchronizer.joint_3.OUTPUT_JntPos","lwr_collector.JointAngles_Collector.Collect_In_3",cp_s_collector);
+lwr_synchronizer.connectPortTo("lwr_synchronizer.joint_3.OUTPUT_JntVel","lwr_collector.JointVelocities_Collector.Collect_In_3",cp_s_collector);
+lwr_synchronizer.connectPortTo("lwr_synchronizer.joint_3.OUTPUT_JntTorq","lwr_collector.JointTorques_Collector.Collect_In_3",cp_s_collector);
+
+// ### joint_4 ###
+lwr_synchronizer.connectPortTo("lwr_synchronizer.joint_4.OUTPUT_JntPos","lwr_collector.JointAngles_Collector.Collect_In_4",cp_s_collector);
+lwr_synchronizer.connectPortTo("lwr_synchronizer.joint_4.OUTPUT_JntVel","lwr_collector.JointVelocities_Collector.Collect_In_4",cp_s_collector);
+lwr_synchronizer.connectPortTo("lwr_synchronizer.joint_4.OUTPUT_JntTorq","lwr_collector.JointTorques_Collector.Collect_In_4",cp_s_collector);
+
+// ### joint_5 ###
+lwr_synchronizer.connectPortTo("lwr_synchronizer.joint_5.OUTPUT_JntPos","lwr_collector.JointAngles_Collector.Collect_In_5",cp_s_collector);
+lwr_synchronizer.connectPortTo("lwr_synchronizer.joint_5.OUTPUT_JntVel","lwr_collector.JointVelocities_Collector.Collect_In_5",cp_s_collector);
+lwr_synchronizer.connectPortTo("lwr_synchronizer.joint_5.OUTPUT_JntTorq","lwr_collector.JointTorques_Collector.Collect_In_5",cp_s_collector);
+
+// ### joint_6 ###
+lwr_synchronizer.connectPortTo("lwr_synchronizer.joint_6.OUTPUT_JntPos","lwr_collector.JointAngles_Collector.Collect_In_6",cp_s_collector);
+lwr_synchronizer.connectPortTo("lwr_synchronizer.joint_6.OUTPUT_JntVel","lwr_collector.JointVelocities_Collector.Collect_In_6",cp_s_collector);
+lwr_synchronizer.connectPortTo("lwr_synchronizer.joint_6.OUTPUT_JntTorq","lwr_collector.JointTorques_Collector.Collect_In_6",cp_s_collector);
+
+
+
+// # important for custom connections
+connectPeers("lwr_splitter", "lwr_trq_controller")
+connectPeers("lwr_collector", "lwr_trq_controller")
+
+// # Connect Controller to Splitter
+var ConnPolicy cp_ctrler_splitter;
+cp_ctrler_splitter.type = DATA;
+cp_ctrler_splitter.lock_policy = LOCK_FREE;
+
+lwr_splitter.connectPortTo("lwr_trq_controller.cmdJntPos","lwr_splitter.JointAngles_Splitter.ToSplit_In",cp_ctrler_splitter);
+lwr_splitter.connectPortTo("lwr_trq_controller.cmdJntTrq","lwr_splitter.JointTorques_Splitter.ToSplit_In",cp_ctrler_splitter);
+
+
+// # Connect Collector to Controller
+var ConnPolicy cp_collector_ctrler;
+cp_collector_ctrler.type = DATA;
+cp_collector_ctrler.lock_policy = LOCK_FREE;
+
+lwr_collector.connectPortTo("lwr_collector.JointAngles_Collector.Collected_Out","lwr_trq_controller.currJntPos",cp_ctrler_splitter);
+lwr_collector.connectPortTo("lwr_collector.JointVelocities_Collector.Collected_Out","lwr_trq_controller.currJntVel",cp_ctrler_splitter);
+lwr_collector.connectPortTo("lwr_collector.JointTorques_Collector.Collected_Out","lwr_trq_controller.currJntTrq",cp_ctrler_splitter);
+
+lwr_splitter.start()
+lwr_collector.start()
 
 lwr_simulation.start()
 lwr_synchronizer.start()
