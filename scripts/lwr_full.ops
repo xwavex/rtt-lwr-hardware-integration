@@ -72,13 +72,23 @@ connect("lwr_simulation.JointTorque","lwr_synchronizer.currJntTrq",cp_s_s);
 connect("lwr_simulation.JointVelocity","lwr_synchronizer.currJntVel",cp_s_s);
 
 lwr_simulation.configure()
-lwr_simulation.setControlMode(0,"FRI_CTRL_DIRECT_TORQUE")
-lwr_simulation.setControlMode(1,"FRI_CTRL_DIRECT_TORQUE")
-lwr_simulation.setControlMode(2,"FRI_CTRL_DIRECT_TORQUE")
-lwr_simulation.setControlMode(3,"FRI_CTRL_DIRECT_TORQUE")
-lwr_simulation.setControlMode(4,"FRI_CTRL_DIRECT_TORQUE")
-lwr_simulation.setControlMode(5,"FRI_CTRL_DIRECT_TORQUE")
-lwr_simulation.setControlMode(6,"FRI_CTRL_DIRECT_TORQUE")
+//lwr_simulation.setControlMode(0,"FRI_CTRL_DIRECT_TORQUE")
+//lwr_simulation.setControlMode(1,"FRI_CTRL_DIRECT_TORQUE")
+//lwr_simulation.setControlMode(2,"FRI_CTRL_DIRECT_TORQUE")
+//lwr_simulation.setControlMode(3,"FRI_CTRL_DIRECT_TORQUE")
+//lwr_simulation.setControlMode(4,"FRI_CTRL_DIRECT_TORQUE")
+//lwr_simulation.setControlMode(5,"FRI_CTRL_DIRECT_TORQUE")
+//lwr_simulation.setControlMode(6,"FRI_CTRL_DIRECT_TORQUE")
+
+lwr_simulation.setControlMode(0,"FRI_CTRL_JNT_IMP")
+lwr_simulation.setControlMode(1,"FRI_CTRL_JNT_IMP")
+lwr_simulation.setControlMode(2,"FRI_CTRL_JNT_IMP")
+lwr_simulation.setControlMode(3,"FRI_CTRL_JNT_IMP")
+lwr_simulation.setControlMode(4,"FRI_CTRL_JNT_IMP")
+lwr_simulation.setControlMode(5,"FRI_CTRL_JNT_IMP")
+lwr_simulation.setControlMode(6,"FRI_CTRL_JNT_IMP")
+
+
 
 lwr_synchronizer.configure()
 lwr_trq_controller.configure()
