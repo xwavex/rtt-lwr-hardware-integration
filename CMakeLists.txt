@@ -1,7 +1,8 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(rtt-gazebo-lwr-integration)
 set(CMAKE_BUILD_TYPE Release)
-list(APPEND CMAKE_CXX_FLAGS "-std=c++11")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+#list(APPEND CMAKE_CXX_FLAGS "-std=c++11")
 ## Find catkin macros and libraries
 #find_package(catkin REQUIRED COMPONENTS 
 #    rtt_ros 
