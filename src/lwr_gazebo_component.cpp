@@ -255,7 +255,7 @@ public:
 			break;
 		}
 
-		RTT::log(RTT::Error) << "Brakes?: " << set_brakes << RTT::endlog();
+//		RTT::log(RTT::Error) << "Brakes?: " << set_brakes << RTT::endlog();
 
 		// Set Gravity Mode or specified links
 		for (std::map<gazebo::physics::LinkPtr, bool>::iterator it =
@@ -298,8 +298,8 @@ public:
 			// Update specific joints regarding cmd
 			for (unsigned j = 0; j < joints_idx.size(); j++) {
 				gazebo_joints_[joints_idx[j]]->SetForce(0, jnt_trq_cmd_->Nm(j));
-				RTT::log(RTT::Error) << "set Force: " << j << ", "
-						<< jnt_trq_cmd_->Nm(j) << RTT::endlog();
+//				RTT::log(RTT::Error) << "set Force: " << j << ", "
+//						<< jnt_trq_cmd_->Nm(j) << RTT::endlog();
 			}
 		}
 		last_data_timestamp = data_timestamp;

@@ -199,6 +199,12 @@ lwr_collector.connectPortTo("lwr_collector.JointAngles_Collector.Collected_Out",
 lwr_collector.connectPortTo("lwr_collector.JointVelocities_Collector.Collected_Out","lwr_trq_controller.currJntVel",cp_ctrler_splitter);
 lwr_collector.connectPortTo("lwr_collector.JointTorques_Collector.Collected_Out","lwr_trq_controller.currJntTrq",cp_ctrler_splitter);
 
+
+// connect impedance direct to simulation
+var ConnPolicy cp_direct_to_sim;
+connect("lwr_trq_controller.cmdJntImp","lwr_simulation.JointImpedanceCommand",cp_direct_to_sim);
+
+
 lwr_splitter.start()
 lwr_collector.start()
 
