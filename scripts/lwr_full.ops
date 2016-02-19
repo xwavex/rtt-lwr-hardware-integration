@@ -46,8 +46,8 @@ lwr_splitter.configure()
 
 // # Connect Simulation to Gazebo
 var ConnPolicy cp_s_g;
-cp_s_g.type = DATA;
-cp_s_g.lock_policy = LOCK_FREE; //LOCK_FREE // LOCKED
+//cp_s_g.type = DATA;
+//cp_s_g.lock_policy = LOCK_FREE; //LOCK_FREE // LOCKED
 
 connect("lwr_simulation.JointPositionGazeboCommand","lwr_gazebo.JointPositionCommand",cp_s_g);
 connect("lwr_simulation.JointTorqueGazeboCommand","lwr_gazebo.JointTorqueCommand",cp_s_g);
@@ -60,8 +60,8 @@ connect("lwr_gazebo.JointVelocity","lwr_simulation.JointVelocityGazebo",cp_s_g);
 
 // # Connect Synchronizer to Simulation
 var ConnPolicy cp_s_s;
-cp_s_s.type = DATA;
-cp_s_s.lock_policy = LOCK_FREE; //LOCK_FREE // LOCKED
+//cp_s_s.type = DATA;
+//cp_s_s.lock_policy = LOCK_FREE; //LOCK_FREE // LOCKED
 
 connect("lwr_synchronizer.cmdJntPos","lwr_simulation.JointPositionCommand",cp_s_s);
 connect("lwr_synchronizer.cmdJntTrq","lwr_simulation.JointTorqueCommand",cp_s_s);
@@ -100,8 +100,8 @@ connectPeers("lwr_synchronizer", "lwr_collector")
 
 // # connect lwr_synchronizer and lwr_splitter
 var ConnPolicy cp_s_splitter;
-cp_s_splitter.type = DATA;
-cp_s_splitter.lock_policy = LOCK_FREE;
+//cp_s_splitter.type = DATA;
+//cp_s_splitter.lock_policy = LOCK_FREE;
 
 // TODO add impedance!
 
@@ -137,8 +137,8 @@ lwr_synchronizer.connectPortTo("lwr_splitter.JointTorques_Splitter.Splitted_Out_
 
 // # connect lwr_synchronizer and lwr_collector
 var ConnPolicy cp_s_collector;
-cp_s_collector.type = DATA;
-cp_s_collector.lock_policy = LOCK_FREE;
+//cp_s_collector.type = DATA;
+//cp_s_collector.lock_policy = LOCK_FREE;
 
 // ### joint_0 ###
 lwr_synchronizer.connectPortTo("lwr_synchronizer.joint_0.OUTPUT_JntPos","lwr_collector.JointAngles_Collector.Collect_In_0",cp_s_collector);
@@ -183,8 +183,8 @@ connectPeers("lwr_collector", "lwr_trq_controller")
 
 // # Connect Controller to Splitter
 var ConnPolicy cp_ctrler_splitter;
-cp_ctrler_splitter.type = DATA;
-cp_ctrler_splitter.lock_policy = LOCK_FREE;
+//cp_ctrler_splitter.type = DATA;
+//cp_ctrler_splitter.lock_policy = LOCK_FREE;
 
 lwr_splitter.connectPortTo("lwr_trq_controller.cmdJntPos","lwr_splitter.JointAngles_Splitter.ToSplit_In",cp_ctrler_splitter);
 lwr_splitter.connectPortTo("lwr_trq_controller.cmdJntTrq","lwr_splitter.JointTorques_Splitter.ToSplit_In",cp_ctrler_splitter);
@@ -192,8 +192,8 @@ lwr_splitter.connectPortTo("lwr_trq_controller.cmdJntTrq","lwr_splitter.JointTor
 
 // # Connect Collector to Controller
 var ConnPolicy cp_collector_ctrler;
-cp_collector_ctrler.type = DATA;
-cp_collector_ctrler.lock_policy = LOCK_FREE;
+//cp_collector_ctrler.type = DATA;
+//cp_collector_ctrler.lock_policy = LOCK_FREE;
 
 lwr_collector.connectPortTo("lwr_collector.JointAngles_Collector.Collected_Out","lwr_trq_controller.currJntPos",cp_ctrler_splitter);
 lwr_collector.connectPortTo("lwr_collector.JointVelocities_Collector.Collected_Out","lwr_trq_controller.currJntVel",cp_ctrler_splitter);
