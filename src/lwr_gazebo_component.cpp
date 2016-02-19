@@ -167,14 +167,14 @@ public:
 							RTT::os::TimeService::Instance()->getTicks());
 
 			if (rtt_time_now_ != rtt_last_clock && data_fs != RTT::NewData)
-				RTT::log(RTT::Debug) << getName() << " "
-						<< "Waiting for UpdateHook at " << rtt_time_now_
-						<< " v:" << nb_cmd_received_ << data_fs
-						<< RTT::endlog();
+//				RTT::log(RTT::Debug) << getName() << " "
+//						<< "Waiting for UpdateHook at " << rtt_time_now_
+//						<< " v:" << nb_cmd_received_ << data_fs
+//						<< RTT::endlog();
 			rtt_last_clock = rtt_time_now_;
 
-			RTT::log(RTT::Debug) << getName() << " nb_cmd_received_ = "
-					<< nb_cmd_received_ << RTT::endlog();
+//			RTT::log(RTT::Debug) << getName() << " nb_cmd_received_ = "
+//					<< nb_cmd_received_ << RTT::endlog();
 
 		} while (!(RTT::NewData == data_fs && nb_cmd_received_)
 				&& sync_with_cmds_);
@@ -228,7 +228,7 @@ public:
 //					<< ", jnt_trq_" << jnt_trq_->Nm(j) << RTT::endlog();
 
 		}
-		RTT::log(RTT::Error) << "\n\n" << RTT::endlog();
+//		RTT::log(RTT::Error) << "\n\n" << RTT::endlog();
 
 		// Simulates breaks
 		// NOTE: Gazebo is calling the callback very fast, so we might have false positive
