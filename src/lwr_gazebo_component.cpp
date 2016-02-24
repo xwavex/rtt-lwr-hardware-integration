@@ -171,7 +171,7 @@ public:
 //						<< "Waiting for UpdateHook at " << rtt_time_now_
 //						<< " v:" << nb_cmd_received_ << data_fs
 //						<< RTT::endlog();
-			rtt_last_clock = rtt_time_now_;
+				rtt_last_clock = rtt_time_now_;
 
 //			RTT::log(RTT::Debug) << getName() << " nb_cmd_received_ = "
 //					<< nb_cmd_received_ << RTT::endlog();
@@ -220,8 +220,48 @@ public:
 					gazebo_joints_[joints_idx[j]]->GetAngle(0).Radian());
 			jnt_vel_->setFromRad_s(j,
 					gazebo_joints_[joints_idx[j]]->GetVelocity(0));
-			jnt_trq_->setFromNm(j, gazebo_joints_[joints_idx[j]]->GetForce(0u)); // perhaps change to GetForceTorque
 
+			gazebo::physics::JointWrench w =
+					gazebo_joints_[joints_idx[j]]->GetForceTorque(0u);
+			gazebo::math::Vector3 a =
+					gazebo_joints_[joints_idx[j]]->GetLocalAxis(0u);
+			//this->robotState.effort[i] = a.Dot(w.body1Torque);
+
+			// do i need this?
+			/*
+			if (effortValQueue.size() > 0) {
+				for (int i = 0; i < this->joints.size(); i++) {
+					this->robotState.effort[i] *= 1.0 / effortValQueue.size();
+				}
+			}
+			this->effort_average_cnt = (this->effort_average_cnt+1) % this->effort_average_window_size;
+			*/
+			jnt_trq_->setFromNm(j, a.Dot(w.body1Torque)); // perhaps change to GetForceTorque
+//
+//			RTT::log(RTT::Error) << "jnt_trq_ on (local axis) = "
+//								<< a.Dot(w.body1Torque)
+//								<< RTT::endlog();
+
+
+//			RTT::log(RTT::Error) << "GetLinkTorque(0).x = "
+//					<< gazebo_joints_[joints_idx[j]]->GetLinkTorque(0).x
+//					<< RTT::endlog();
+//			RTT::log(RTT::Error) << "GetLinkTorque(0).y = "
+//					<< gazebo_joints_[joints_idx[j]]->GetLinkTorque(0).y
+//					<< RTT::endlog();
+//			RTT::log(RTT::Error) << "GetLinkTorque(0).z = "
+//					<< gazebo_joints_[joints_idx[j]]->GetLinkTorque(0).z
+//					<< RTT::endlog();
+//
+//			RTT::log(RTT::Error) << "body1Torque.x = "
+//					<< gazebo_joints_[joints_idx[j]]->GetForceTorque(0).body1Torque.x
+//					<< RTT::endlog();
+//			RTT::log(RTT::Error) << "body1Torque.y = "
+//					<< gazebo_joints_[joints_idx[j]]->GetForceTorque(0).body1Torque.y
+//					<< RTT::endlog();
+//			RTT::log(RTT::Error) << "body1Torque.z = "
+//					<< gazebo_joints_[joints_idx[j]]->GetForceTorque(0).body1Torque.z
+//					<< RTT::endlog();
 
 //			RTT::log(RTT::Info) << "GetState: jnt[" << j << "]: jnt_pos_: "
 //					<< jnt_pos_->rad(j) << ", jnt_vel_: " << jnt_vel_->rad_s(j)
