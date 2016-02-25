@@ -26,6 +26,7 @@ setActivity("lwr_synchronizer",0.001,HighestPriority,ORO_SCHED_RT)
 
 // #######------- lwr_trq_controller : RTTTrqController -------#######
 loadComponent("lwr_trq_controller","RTTTrqController");
+lwr_trq_controller.parseURDFforKDL(lwr_gazebo.misc.urdf_string)
 setActivity("lwr_trq_controller",0.001,HighestPriority,ORO_SCHED_RT)
 
 
@@ -72,21 +73,21 @@ connect("lwr_simulation.JointTorque","lwr_synchronizer.currJntTrq",cp_s_s);
 connect("lwr_simulation.JointVelocity","lwr_synchronizer.currJntVel",cp_s_s);
 
 lwr_simulation.configure()
-//lwr_simulation.setControlMode(0,"FRI_CTRL_DIRECT_TORQUE")
-//lwr_simulation.setControlMode(1,"FRI_CTRL_DIRECT_TORQUE")
-//lwr_simulation.setControlMode(2,"FRI_CTRL_DIRECT_TORQUE")
-//lwr_simulation.setControlMode(3,"FRI_CTRL_DIRECT_TORQUE")
-//lwr_simulation.setControlMode(4,"FRI_CTRL_DIRECT_TORQUE")
-//lwr_simulation.setControlMode(5,"FRI_CTRL_DIRECT_TORQUE")
-//lwr_simulation.setControlMode(6,"FRI_CTRL_DIRECT_TORQUE")
+lwr_simulation.setControlMode(0,"FRI_CTRL_DIRECT_TORQUE")
+lwr_simulation.setControlMode(1,"FRI_CTRL_DIRECT_TORQUE")
+lwr_simulation.setControlMode(2,"FRI_CTRL_DIRECT_TORQUE")
+lwr_simulation.setControlMode(3,"FRI_CTRL_DIRECT_TORQUE")
+lwr_simulation.setControlMode(4,"FRI_CTRL_DIRECT_TORQUE")
+lwr_simulation.setControlMode(5,"FRI_CTRL_DIRECT_TORQUE")
+lwr_simulation.setControlMode(6,"FRI_CTRL_DIRECT_TORQUE")
 
-lwr_simulation.setControlMode(0,"FRI_CTRL_JNT_IMP")
-lwr_simulation.setControlMode(1,"FRI_CTRL_JNT_IMP")
-lwr_simulation.setControlMode(2,"FRI_CTRL_JNT_IMP")
-lwr_simulation.setControlMode(3,"FRI_CTRL_JNT_IMP")
-lwr_simulation.setControlMode(4,"FRI_CTRL_JNT_IMP")
-lwr_simulation.setControlMode(5,"FRI_CTRL_JNT_IMP")
-lwr_simulation.setControlMode(6,"FRI_CTRL_JNT_IMP")
+//lwr_simulation.setControlMode(0,"FRI_CTRL_JNT_IMP")
+//lwr_simulation.setControlMode(1,"FRI_CTRL_JNT_IMP")
+//lwr_simulation.setControlMode(2,"FRI_CTRL_JNT_IMP")
+//lwr_simulation.setControlMode(3,"FRI_CTRL_JNT_IMP")
+//lwr_simulation.setControlMode(4,"FRI_CTRL_JNT_IMP")
+//lwr_simulation.setControlMode(5,"FRI_CTRL_JNT_IMP")
+//lwr_simulation.setControlMode(6,"FRI_CTRL_JNT_IMP")
 
 
 
@@ -179,7 +180,7 @@ lwr_synchronizer.connectPortTo("lwr_synchronizer.joint_6.OUTPUT_JntTorq","lwr_co
 
 // # important for custom connections
 connectPeers("lwr_splitter", "lwr_trq_controller")
-connectPeers("lwr_collector", "lwr_trq_controller")
+connectPeers("lwr_trq_controller", "lwr_collector")
 
 // # Connect Controller to Splitter
 var ConnPolicy cp_ctrler_splitter;
@@ -195,9 +196,9 @@ var ConnPolicy cp_collector_ctrler;
 //cp_collector_ctrler.type = DATA;
 //cp_collector_ctrler.lock_policy = LOCK_FREE;
 
-lwr_collector.connectPortTo("lwr_collector.JointAngles_Collector.Collected_Out","lwr_trq_controller.currJntPos",cp_ctrler_splitter);
-lwr_collector.connectPortTo("lwr_collector.JointVelocities_Collector.Collected_Out","lwr_trq_controller.currJntVel",cp_ctrler_splitter);
-lwr_collector.connectPortTo("lwr_collector.JointTorques_Collector.Collected_Out","lwr_trq_controller.currJntTrq",cp_ctrler_splitter);
+lwr_collector.connectPortTo("lwr_collector.JointAngles_Collector.Collected_Out","lwr_trq_controller.currJntPos",cp_collector_ctrler);
+lwr_collector.connectPortTo("lwr_collector.JointVelocities_Collector.Collected_Out","lwr_trq_controller.currJntVel",cp_collector_ctrler);
+lwr_collector.connectPortTo("lwr_collector.JointTorques_Collector.Collected_Out","lwr_trq_controller.currJntTrq",cp_collector_ctrler);
 
 
 // connect impedance direct to simulation
@@ -205,9 +206,8 @@ var ConnPolicy cp_direct_to_sim;
 connect("lwr_trq_controller.cmdJntImp","lwr_simulation.JointImpedanceCommand",cp_direct_to_sim);
 
 
-lwr_splitter.start()
-lwr_collector.start()
-
 lwr_simulation.start()
 lwr_synchronizer.start()
+lwr_splitter.start()
+lwr_collector.start()
 lwr_trq_controller.start()
