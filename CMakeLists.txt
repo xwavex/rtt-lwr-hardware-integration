@@ -24,7 +24,7 @@ endif()
 include(${OROCOS-RTT_USE_FILE_PATH}/UseOROCOS-RTT.cmake )
 
 # Depend on system install of Gazebo 
-find_package(gazebo 6.4.0 REQUIRED)
+find_package(gazebo 6.0.0 REQUIRED)
 message(STATUS "GAZEBO version: ${GAZEBO_VERSION}") 
 message(STATUS "GAZEBO_INCLUDE_DIRS: ${GAZEBO_INCLUDE_DIRS}")
 message(STATUS "GAZEBO_LIBRARIES: ${GAZEBO_LIBRARIES}")
