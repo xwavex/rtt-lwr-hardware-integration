@@ -21,6 +21,8 @@
 
 #include <nemo/Vector.h>
 #include <nemo/Mapping.h>
+#include <friremote_rt.h>
+#include <friudp_rt.h>
 
 #define l(lvl) RTT::log(lvl) << "[" << this->getName() << "] "
 
@@ -229,19 +231,18 @@ public:
 
 			// do i need this?
 			/*
-			if (effortValQueue.size() > 0) {
-				for (int i = 0; i < this->joints.size(); i++) {
-					this->robotState.effort[i] *= 1.0 / effortValQueue.size();
-				}
-			}
-			this->effort_average_cnt = (this->effort_average_cnt+1) % this->effort_average_window_size;
-			*/
+			 if (effortValQueue.size() > 0) {
+			 for (int i = 0; i < this->joints.size(); i++) {
+			 this->robotState.effort[i] *= 1.0 / effortValQueue.size();
+			 }
+			 }
+			 this->effort_average_cnt = (this->effort_average_cnt+1) % this->effort_average_window_size;
+			 */
 			jnt_trq_->setFromNm(j, a.Dot(w.body1Torque)); // perhaps change to GetForceTorque
 //
 //			RTT::log(RTT::Error) << "jnt_trq_ on (local axis) = "
 //								<< a.Dot(w.body1Torque)
 //								<< RTT::endlog();
-
 
 //			RTT::log(RTT::Error) << "GetLinkTorque(0).x = "
 //					<< gazebo_joints_[joints_idx[j]]->GetLinkTorque(0).x
@@ -345,10 +346,147 @@ public:
 		last_data_timestamp = data_timestamp;
 
 	}
+//
+//	virtual void friUpdateHook() {
+//
+//		double rtt_time_now_ = 0;
+//		double rtt_last_clock = 0;
+//
+//		do {
+//			updateData();
+//
+//			if ((nb_cmd_received_ == 0 && data_fs == RTT::NoData)
+//					|| jnt_pos_fs == RTT::NewData)
+//				break;
+//
+//			rtt_time_now_ = 1E-9
+//					* RTT::os::TimeService::ticks2nsecs(
+//							RTT::os::TimeService::Instance()->getTicks());
+//
+//			if (rtt_time_now_ != rtt_last_clock && data_fs != RTT::NewData)
+//				//				RTT::log(RTT::Debug) << getName() << " "
+//				//						<< "Waiting for UpdateHook at " << rtt_time_now_
+//				//						<< " v:" << nb_cmd_received_ << data_fs
+//				//						<< RTT::endlog();
+//				rtt_last_clock = rtt_time_now_;
+//
+//			//			RTT::log(RTT::Debug) << getName() << " nb_cmd_received_ = "
+//			//					<< nb_cmd_received_ << RTT::endlog();
+//
+//		} while (!(RTT::NewData == data_fs && nb_cmd_received_)
+//				&& sync_with_cmds_);
+//
+//		// Increment simulation step counter (debugging)
+//		//steps_gz_++;
+//
+//		// Get the RTT and gazebo time for debugging purposes
+//		rtt_time_ = 1E-9
+//				* RTT::os::TimeService::ticks2nsecs(
+//						RTT::os::TimeService::Instance()->getTicks());
+//		//TODO get total time maybe?
+//
+//		// Get state
+//		//Standard FRI!
+//		friInst->doReceiveData();
+//		friInst->setToKRLInt(0,1);
+//		lastQuality = friInst->getQuality();
+//		if(lastQuality >= FRI_QUALITY_OK){
+//			friInst->setToKRLInt(0,10);
+//		}
+//		friInst->setToKRLReal(0,friInst->getFrmKRLReal(1));
+//		//END STANDARD
+//		//TODO check for fri quality!!
+//		float* pos = friInst->getMsrCmdJntPosition();
+//		for (unsigned j = 0; j < joints_idx.size(); j++) {
+//
+////			jnt_pos_->setFromRad(j,
+////					gazebo_joints_[joints_idx[j]]->GetAngle(0).Radian());
+////			jnt_vel_->setFromRad_s(j,
+////					gazebo_joints_[joints_idx[j]]->GetVelocity(0));
+//
+//			jnt_pos_->setFromRad(j,
+//					pos[j]);
+//			jnt_vel_->setFromRad_s(j, (pos[j] - jnt_pos_last[j])/(rtt_time_-rtt_last_clock));
+//
+//
+//			jnt_trq_->setFromNm(j, friInst->getMsrJntTrq()[j]);
+//		}
+//		//		RTT::log(RTT::Error) << "\n\n" << RTT::endlog();
+//
+//
+//		switch (data_fs) {
+//		// Not Connected
+//		case RTT::NoData:
+//			set_brakes = true;
+//
+//			break;
+//
+//			// Connection lost
+//		case RTT::OldData:
+//			if (data_timestamp == last_data_timestamp && nb_no_data_++ >= 2){
+//				set_brakes = true;
+//			}
+//			break;
+//
+//			// OK
+//		case RTT::NewData:
+//			set_brakes = false;
+//			if (nb_no_data_-- <= 0)
+//				nb_no_data_ = 0;
+//			break;
+//		}
+//
+//		//		RTT::log(RTT::Error) << "Brakes?: " << set_brakes << RTT::endlog();
+//
+//		// Copy Current joint pos in case of brakes
+////		if (!set_brakes)
+////			for (unsigned j = 0; j < joints_idx.size(); j++)
+////				jnt_pos_brakes_->setFromRad(j, jnt_pos_->rad(j));
+//
+//		// Force Joint Positions in case of a cmd
+//		if (set_new_pos) {
+//			RTT::log(RTT::Error) << "set_new_pos = true" << RTT::endlog();
+//			// Update specific joints regarding cmd
+//			float jnt_pos_robot[joints_idx.size()];
+//			for (unsigned j = 0; j < joints_idx.size(); j++) {
+////				gazebo_joints_[joints_idx[j]]->SetPosition(0,
+////						jnt_pos_cmd_->rad(j));
+//				jnt_pos_robot[j] = jnt_pos_cmd_->rad(j);
+//
+//			}
+//			friInst->doPositionControl(jnt_pos_robot,false);
+//			// Aknowledge the settings
+//			set_new_pos = false;
+//
+//		} else if (set_brakes) {
+////			for (unsigned j = 0; j < joints_idx.size(); j++)
+////				gazebo_joints_[joints_idx[j]]->SetPosition(0,
+////						jnt_pos_brakes_->rad(j));
+//			friInst->doTest();
+//		} else {
+//			// Write command
+//			// Update specific joints regarding cmd
+//			float thau[joints_idx.size()];
+//			float q[joints_idx.size()];
+//			for (unsigned j = 0; j < joints_idx.size(); j++) {
+////				gazebo_joints_[joints_idx[j]]->SetForce(0, jnt_trq_cmd_->Nm(j));
+//				//				RTT::log(RTT::Error) << "set Force: " << j << ", "
+//				//						<< jnt_trq_cmd_->Nm(j) << RTT::endlog();
+//				thau[j]=jnt_trq_cmd_->Nm(j);
+//				q[j]=jnt_pos_->rad(j);
+//			}
+//			friInst->doJntImpedanceControl(q, NULL, NULL, thau);
+//		}
+//		friInst->doSendData();
+//		last_data_timestamp = data_timestamp;
+//
+//	}
 
-	virtual bool configureHook() {
-		return true;
-	}
+//	virtual bool configureHook() {
+//		friInst = new friRemote(49939, ip_left.c_str());
+//		lastQuality = FRI_QUALITY_BAD;
+//		return true;
+//	}
 
 	void updateData() {
 //		if (port_JointPositionCommand.connected()
@@ -448,8 +586,7 @@ protected:
 	RTT::OutputPort<rci::JointVelocitiesPtr> port_JointVelocity;
 
 	RTT::FlowStatus jnt_pos_fs, data_fs;
-
-	rci::JointAnglesPtr jnt_pos_cmd_, jnt_pos_;
+	rci::JointAnglesPtr jnt_pos_cmd_, jnt_pos_, jnt_pos_last;
 	rci::JointTorquesPtr jnt_trq_, jnt_trq_cmd_;
 	rci::JointVelocitiesPtr jnt_vel_, jnt_vel_cmd_;
 	rci::JointAnglesPtr jnt_pos_brakes_;
@@ -485,6 +622,12 @@ protected:
 
 	// contains the urdf string for the associated model.
 	std::string urdf_string;
+
+
+	//JOSH STUFF!!!
+	friRemote* friInst;
+	std::string ip_left;
+	FRI_QUALITY lastQuality;
 };
 
 ORO_LIST_COMPONENT_TYPE(LWRGazeboComponent)

@@ -1,0 +1,56 @@
+import("RTTController")
+import("rtt-gazebo-lwr-integration")
+
+loadComponent("lwr_fri","LWRFriComponent");
+setActivity("lwr_fri",0.001,HighestPriority,ORO_SCHED_RT)
+
+lwr_fri.configure()
+lwr_fri.start()
+
+loadComponent("lwr_osf_controller","RttLwrOSFController");
+lwr_osf_controller.parseURDFforKDL(lwr_fri.misc.urdf_string)
+setActivity("lwr_osf_controller",0.001,HighestPriority,ORO_SCHED_RT)
+
+var ConnPolicy cp_ctrl_gz;
+connect("lwr_osf_controller.cmdJntPos","lwr_fri.JointPositionCommand",cp_ctrl_gz);
+connect("lwr_osf_controller.cmdJntTrq","lwr_fri.JointTorqueCommand",cp_ctrl_gz);
+
+connect("lwr_fri.JointPosition","lwr_osf_controller.currJntPos",cp_ctrl_gz);
+connect("lwr_fri.JointTorque","lwr_osf_controller.currJntTrq",cp_ctrl_gz);
+connect("lwr_fri.JointVelocity","lwr_osf_controller.currJntVel",cp_ctrl_gz);
+
+// setting a single property
+// define khatib gains
+// define specification
+set lwr_osf_controller.use_original_khatib_controller = 0;
+set lwr_osf_controller.use_position_controller=1;
+set lwr_osf_controller.use_euler_orientation = 1;
+
+// define khatib gains
+set lwr_osf_controller.Kp_cartTranslationKhatibGain = 50;
+set lwr_osf_controller.Kd_cartTranslationKhatibGain = 14;
+set lwr_osf_controller.Kp_cartOrientationEulerKhatibGain = 2500;
+set lwr_osf_controller.Kd_cartOrientationEulerKhatibGain = 100;
+set lwr_osf_controller.Kp_cartOrientationQuaternionKhatibGain = 72;
+set lwr_osf_controller.Kd_cartOrientationQuaternionKhatibGain = 100; // here the rule 2*sqrt() does not make sense because of different comparisons
+set lwr_osf_controller.Kp_jointKhatibGain = 20;
+set lwr_osf_controller.Kd_jointKhatibGain = 6;
+
+// define constrained projection gains
+set lwr_osf_controller.Kp_cartTranslationConstrainedGain = 200;
+set lwr_osf_controller.Kd_cartTranslationConstrainedGain = 20;
+set lwr_osf_controller.Kp_cartOrientationEulerConstrainedGain = 1000;
+set lwr_osf_controller.Kd_cartOrientationEulerConstrainedGain = 77;
+set lwr_osf_controller.Kp_cartOrientationQuaternionConstrainedGain = 0;
+set lwr_osf_controller.Kd_cartOrientationQuaternionConstrainedGain = 0;
+set lwr_osf_controller.Kp_jointConstrainedGain = 20;
+set lwr_osf_controller.Kd_jointConstrainedGain = 6;
+
+// setting an array of properties
+//for (var int indx = 0; indx < 10; set indx = indx +1 )
+//{
+//    set lwr_osf_controller.tenGains[indx] = 77;
+//}
+
+lwr_osf_controller.configure()
+lwr_osf_controller.start()
