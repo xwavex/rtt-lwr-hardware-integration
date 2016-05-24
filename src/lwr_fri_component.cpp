@@ -86,6 +86,7 @@ public:
 		double rtt_last_clock = 0;
 
 		do {
+RTT::log(RTT::Error)<<"Updating data!\n"<<RTT::endlog();
 			updateData();
 			if ((nb_cmd_received_ == 0 && data_fs == RTT::NoData)
 					|| jnt_pos_fs == RTT::NewData)
