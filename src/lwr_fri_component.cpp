@@ -35,15 +35,7 @@ public:
 					0), set_new_pos(false), nb_no_data_(0), set_brakes(false), nb_static_joints(
 					0), // HACK: The urdf has static tag for base_link, which makes it appear in gazebo as a joint
 			last_gz_update_time_(0), nb_cmd_received_(0), sync_with_cmds_(true) {
-		// Add required gazebo interfaces
-//		this->provides("gazebo")->addOperation("configure",
-//				&LWRGazeboComponent::gazeboConfigureHook, this,
-//				RTT::ClientThread);
-//		this->provides("gazebo")->addOperation("update",
-//				&LWRGazeboComponent::gazeboUpdateHook, this, RTT::ClientThread);
-
-//		this->addOperation("setLinkGravityMode",&LWRGazeboComponent::setLinkGravityMode,this,RTT::ClientThread); // TODO
-
+		
 		this->ports()->addPort("JointPositionCommand",
 				port_JointPositionCommand).doc(
 				"Input for JointPosition-cmds from Orocos to Gazebo world.");
@@ -74,200 +66,189 @@ public:
 		this->provides("debug")->addAttribute("period_wall", period_wall_);
 
 		this->provides("misc")->addAttribute("urdf_string", urdf_string);
-		RTT::log().setStdStream(std::cout);
-		RTT::log().allowRealTime();
-		RTT::log().startup();
-		RTT::log(RTT::Info)<<"ARGH!\n"<<RTT::endlog();
+		tempCount =100;
 	}
 
 	virtual void updateHook() {
-
-		double rtt_time_now_ = 0;
-		double rtt_last_clock = 0;
-
 		do {
-RTT::log(RTT::Error)<<"Updating data!\n"<<RTT::endlog();
-			updateData();
-			if ((nb_cmd_received_ == 0 && data_fs == RTT::NoData)
-					|| jnt_pos_fs == RTT::NewData)
-				break;
-
-			rtt_time_now_ = 1E-9
-					* RTT::os::TimeService::ticks2nsecs(
+		rtt_time_now_ = RTT::os::TimeService::ticks2nsecs(
 							RTT::os::TimeService::Instance()->getTicks());
+		//Standard FRI!
+		res = -1;
+		res = friInst->doReceiveData();
+		friInst->setToKRLInt(0,1);
+		lastQuality = friInst->getQuality();
+		if(lastQuality >= FRI_QUALITY_OK){
+			friInst->setToKRLInt(1,30);
+		}
+		friInst->setToKRLReal(1,friInst->getFrmKRLReal(1));
+		if(lastQuality >= FRI_QUALITY_PERFECT){
+			#ifdef DEBUG
+			RTT::log(RTT::Error)<<"CONNECTED TO ROB!\n"<<RTT::endlog();
+			#endif
+		//END STANDARD
+		//TODO check for fri quality!!
+		//float pos[7] = ;
+		
+			for (unsigned j = 0; j < 7; j++) {
+				#ifdef DEBUG
+				RTT::log(RTT::Error)<<"UPDATE JNT_DATA!\n"<<RTT::endlog();
+				#endif
+				jnt_pos_->setFromRad(j,
+					friInst->getMsrMsrJntPosition()[j]);
+				#ifdef DEBUG
+				RTT::log(RTT::Error)<<"UPDATE JNT_DATA! TIME NOW: \n"<<(rtt_time_now_)<< " TIME PAST: "<<rtt_last_clock<< " TIMEDIFF: "<<(rtt_time_now_-rtt_last_clock)<<RTT::endlog();
+				#endif
+				jnt_vel_->setFromRad_s(j, (friInst->getMsrMsrJntPosition()[j] - jnt_pos_last->rad(j))/((rtt_time_now_-rtt_last_clock)*1E-9));
+				jnt_pos_last->setFromRad(j,jnt_pos_->rad(j));
 
-			if (rtt_time_now_ != rtt_last_clock && data_fs != RTT::NewData)
-				//				RTT::log(RTT::Debug) << getName() << " "
-				//						<< "Waiting for UpdateHook at " << rtt_time_now_
-				//						<< " v:" << nb_cmd_received_ << data_fs
-				//						<< RTT::endlog();
-				rtt_last_clock = rtt_time_now_;
+				jnt_trq_->setFromNm(j, friInst->getMsrJntTrq()[j]);
+			}
+		
+			updateData();
+			
+		}
+		if ((nb_cmd_received_ == 0 && data_fs == RTT::NoData)
+					|| jnt_pos_fs == RTT::NewData)
+			break;
 
-			//			RTT::log(RTT::Debug) << getName() << " nb_cmd_received_ = "
-			//					<< nb_cmd_received_ << RTT::endlog();
+			
 
+		if (rtt_time_now_ != rtt_last_clock && data_fs != RTT::NewData)
+			#ifdef DEBUG
+			RTT::log(RTT::Debug) << getName() << " "
+					<< "Waiting for UpdateHook at " << rtt_time_now_
+					<< " v:" << nb_cmd_received_ << data_fs
+					<< RTT::endlog();
+			#endif
+			rtt_last_clock = rtt_time_now_;
 			//while no new data for jnt_trqs, and no other commands recieved
 			//maybe actually turn off for asynchronise control?
 		} while (!(RTT::NewData == data_fs && nb_cmd_received_)
-				&& sync_with_cmds_);
-		RTT::log(RTT::Error)<<"ARGH!!!\n"<<RTT::endlog();
+				&& sync_with_cmds_ && lastQuality < FRI_QUALITY_OK);
 		// Increment simulation step counter (debugging)
 		//steps_gz_++;
 
 		// Get the RTT and gazebo time for debugging purposes
-		rtt_time_ = 1E-9
-				* RTT::os::TimeService::ticks2nsecs(
+		rtt_time_ = RTT::os::TimeService::ticks2nsecs(
 						RTT::os::TimeService::Instance()->getTicks());
 		//TODO get total time maybe?
 
-		// Get state
-		//Standard FRI!
-		RTT::log(RTT::Error)<<"recieve\n"<<RTT::endlog();
-		int res = -1, count = 0;
-		do{
-		res = friInst->doReceiveData();
-		RTT::log(RTT::Error)<<"No connection to KRC unit retrying in 3 seconds!"<<RTT::endlog();
-		count++;
-		sleep(3);
-		}while(res==-1 && count<3);
-		if(res==-1){
-			RTT::log(RTT::Error)<<"No connection to KRC unit! Stopping Component."<<RTT::endlog();
-			this->stop();
-		}
-		friInst->setToKRLInt(0,1);
-		lastQuality = friInst->getQuality();
-		if(lastQuality >= FRI_QUALITY_OK){
-			friInst->setToKRLInt(0,10);
-		}
-		friInst->setToKRLReal(0,friInst->getFrmKRLReal(1));
-		//END STANDARD
-		//TODO check for fri quality!!
-		float* pos = friInst->getMsrCmdJntPosition();
-		for (unsigned j = 0; j < joints_idx.size(); j++) {
-
-//			jnt_pos_->setFromRad(j,
-//					gazebo_joints_[joints_idx[j]]->GetAngle(0).Radian());
-//			jnt_vel_->setFromRad_s(j,
-//					gazebo_joints_[joints_idx[j]]->GetVelocity(0));
-
-			jnt_pos_->setFromRad(j,
-					pos[j]);
-			jnt_vel_->setFromRad_s(j, (pos[j] - jnt_pos_last->rad(j))/(rtt_time_-rtt_last_clock));
-
-
-			jnt_trq_->setFromNm(j, friInst->getMsrJntTrq()[j]);
-		}
-		//		RTT::log(RTT::Error) << "\n\n" << RTT::endlog();
-
-
-		switch (data_fs) {
-		// Not Connected
-		case RTT::NoData:
-			set_brakes = true;
-
-			break;
-
-			// Connection lost
-		case RTT::OldData:
-			if (data_timestamp == last_data_timestamp && nb_no_data_++ >= 2){
+		if(lastQuality == FRI_QUALITY_PERFECT){
+			switch (data_fs) {
+			// Not Connected
+			case RTT::NoData:
 				set_brakes = true;
-			}
-			break;
+
+				break;
+
+				// Connection lost
+			case RTT::OldData:
+				if (data_timestamp == last_data_timestamp && nb_no_data_++ >= 2){
+					set_brakes = true;
+				}
+				break;
 
 			// OK
-		case RTT::NewData:
-			set_brakes = false;
-			if (nb_no_data_-- <= 0)
-				nb_no_data_ = 0;
-			break;
-		}
-
-		//		RTT::log(RTT::Error) << "Brakes?: " << set_brakes << RTT::endlog();
-
+			case RTT::NewData:
+				set_brakes = false;
+				if (nb_no_data_-- <= 0)
+					nb_no_data_ = 0;
+				break;
+			}
+		#ifdef DEBUG
+		RTT::log(RTT::Error) << "Brakes?: " << set_brakes << RTT::endlog();
+		#endif
 		// Copy Current joint pos in case of brakes
 //		if (!set_brakes)
-//			for (unsigned j = 0; j < joints_idx.size(); j++)
+//			for (unsigned j = 0; j < 7; j++)
 //				jnt_pos_brakes_->setFromRad(j, jnt_pos_->rad(j));
 
 		// Force Joint Positions in case of a cmd
-		if (set_new_pos) {
+		if (set_new_pos) {//TODO check control schemes!
+			#ifdef DEBUG
 			RTT::log(RTT::Error) << "set_new_pos = true" << RTT::endlog();
+			#endif
 			// Update specific joints regarding cmd
-			float jnt_pos_robot[joints_idx.size()];
-			for (unsigned j = 0; j < joints_idx.size(); j++) {
-//				gazebo_joints_[joints_idx[j]]->SetPosition(0,
-//						jnt_pos_cmd_->rad(j));
+			for (unsigned j = 0; j < 7; j++) {
 				jnt_pos_robot[j] = jnt_pos_cmd_->rad(j);
-
 			}
 			friInst->doPositionControl(jnt_pos_robot,false);
 			// Aknowledge the settings
 			set_new_pos = false;
 
 		} else if (set_brakes) {
-//			for (unsigned j = 0; j < joints_idx.size(); j++)
-//				gazebo_joints_[joints_idx[j]]->SetPosition(0,
-//						jnt_pos_brakes_->rad(j));
-			friInst->doTest();
-		} else {
+			//TODO implement brakes by going to position ctrl mode and giving same configuration
+
+		} else if(friInst->getCurrentControlScheme()==3 && data_fs==RTT::NewData){//TODO define control schemes!
+			#ifdef DEBUG
+			RTT::log(RTT::Error)<<friInst->getCurrentControlScheme()<<" :TORQUE COMMAND!\n"<<RTT::endlog();
+			#endif			
 			// Write command
 			// Update specific joints regarding cmd
-			float thau[joints_idx.size()];
-			float q[joints_idx.size()];
-			for (unsigned j = 0; j < joints_idx.size(); j++) {
-//				gazebo_joints_[joints_idx[j]]->SetForce(0, jnt_trq_cmd_->Nm(j));
-				//				RTT::log(RTT::Error) << "set Force: " << j << ", "
-				//						<< jnt_trq_cmd_->Nm(j) << RTT::endlog();
-				thau[j]=jnt_trq_cmd_->Nm(j)-friInst->getGrav()[j];
+			for (unsigned j = 0; j < 7; j++) {
+				//tempCount to attempt to stop interpolation error, need a better solution
+				if(tempCount==0){
+				thau[j]=jnt_trq_cmd_->Nm(j); //-friInst->getGrav()[j]; //attempted to remove gravity from controller, highly dependant on the quality of the model though so might be better to avoid.
+				}
+				else{
+				   tempCount--;
+				}
 				q[j]=jnt_pos_->rad(j);
+				
 			}
 			friInst->doJntImpedanceControl(q, NULL, NULL, thau);
-		}
+		}else if(friInst->getCurrentControlScheme()!=3){//Changes control scheme to jntImpedance need to have position and other schemes too!
+friInst->setToKRLInt(1,30);
+		}	}
 		friInst->doSendData();
 		last_data_timestamp = data_timestamp;
 
 	}
 
-	virtual bool configureHook() {
+	virtual bool configureHook() {		
+		if (!(port_JointPositionCommand.connected()
+				&& port_JointTorqueCommand.connected()
+				&& port_JointVelocityCommand.connected() &&port_JointPosition.connected()&&port_JointVelocity.connected() && port_JointTorque.connected())) {
+			return false
+		}
 		friInst = new friRemote(49939, "192.168.0.21");
 		lastQuality = FRI_QUALITY_BAD;
-		RTT::log(RTT::Info)<<"ARGH!\n"<<RTT::endlog();
+		RTT::log(RTT::Info)<<"CONFIGURE HOOK!\n"<<RTT::endlog();
+		//possibly read and handshake with KRC here until perfect quality?
+
+		jnt_pos_cmd_ = rci::JointAngles::create(7, 0.0);
+		jnt_pos_ = rci::JointAngles::create(7, 0.0);
+		jnt_pos_last = rci::JointAngles::create(7, 0.0);
+
+		jnt_trq_cmd_ = rci::JointTorques::create(7, 0.0);
+		jnt_trq_ = rci::JointTorques::create(7, 0.0);
+
+		jnt_vel_cmd_ = rci::JointVelocities::create(7, 0.0);
+		jnt_vel_ = rci::JointVelocities::create(7, 0.0);
+
+		jnt_pos_brakes_ = rci::JointAngles::create(7, 0.0);
+
+		port_JointPosition.setDataSample(jnt_pos_);
+		port_JointVelocity.setDataSample(jnt_vel_);
+		port_JointTorque.setDataSample(jnt_trq_);
+
+		last_update_time_ = RTT::os::TimeService::Instance()->getNSecs(); //rtt_rosclock::rtt_now(); // still needed??
+		#ifdef DEBUG
+		RTT::log(RTT::Warning) << "Done configuring gazebo" << RTT::endlog();
+		#endif		
 		return true;
-		//		last;
 	}
 
-	void updateData() {
-//		if (port_JointPositionCommand.connected()
-//				|| port_JointTorqueCommand.connected()
-//				|| port_JointVelocityCommand.connected()) {
-
-//		}
-
-		static double last_update_time_sim;
-		period_sim_ = rtt_time_ - last_update_time_sim;
-		last_update_time_sim = rtt_time_;
-
-		// Compute period in wall clock
-		static double last_update_time_wall;
-		period_wall_ = wall_time_ - last_update_time_wall;
-		last_update_time_wall = wall_time_;
-
+	void updateData() {		
 		// Increment simulation step counter (debugging)
 		steps_rtt_++;
 
 		// Get command from ports
-
-		RTT::os::TimeService::ticks read_start =
-				RTT::os::TimeService::Instance()->getTicks();
-
 		data_fs = port_JointTorqueCommand.read(jnt_trq_cmd_);
 
 		jnt_pos_fs = port_JointPositionCommand.read(jnt_pos_cmd_);
 
-//		if (data_fs == RTT::NewData)
-//			for (int i = 0; i < jnt_trq_cmd_->getDimension(); i++) {
-//				l(RTT::Warning)<< "i: " << i << " = " << jnt_trq_cmd_->Nm(i) << RTT::endlog();
-//			}
 
 		if (jnt_pos_fs == RTT::NewData) {
 			//set_new_pos = true; // TODO remove!
@@ -294,26 +275,22 @@ RTT::log(RTT::Error)<<"Updating data!\n"<<RTT::endlog();
 		case RTT::OldData:
 			break;
 		case RTT::NewData:
-//			RTT::log(RTT::Error) << getName() << " " << data_fs << " at "
-//					<< data_timestamp << RTT::endlog();
+			#ifdef DEBUG
+			RTT::log(RTT::Error) << getName() << " " << data_fs << " at "
+					<< data_timestamp << RTT::endlog();
+			#endif
 			nb_cmd_received_++;
 			last_timestamp = data_timestamp;
-
-//			for (int i = 0; i < jnt_trq_cmd_->getDimension(); i++) {
-//				RTT::log(RTT::Info) << jnt_trq_cmd_->Nm(i) << RTT::endlog();
-//			}
-//			RTT::log(RTT::Info) << "-------" << RTT::endlog();
 			break;
 		case RTT::NoData:
 			nb_cmd_received_ = 0;
 			break;
 		}
-		RTT::log(RTT::Error)<<"tmp!\n"<<RTT::endlog();
+		#ifdef DEBUG
+		RTT::log(RTT::Error)<<"END UPDATE!\n"<<RTT::endlog();
+		#endif
 	}
 
-//	virtual void updateHook() {
-//		return;
-//	}
 protected:
 
 	//! Synchronization ??
@@ -345,6 +322,8 @@ protected:
 	//! Gazebo time for debugging
 	double gz_time_;
 	double wall_time_;
+double rtt_time_now_ = 0;
+		double rtt_last_clock = 0;
 
 	RTT::nsecs last_gz_update_time_, new_pos_timestamp;
 	RTT::Seconds gz_period_;
@@ -377,6 +356,11 @@ protected:
 	friRemote* friInst;
 	std::string ip_left;
 	FRI_QUALITY lastQuality;
+	int tempCount;
+	int res;
+	float thau[7];
+	float q[7];
+	float jnt_pos_robot[7];
 };
 
 ORO_LIST_COMPONENT_TYPE(LWRFriComponent)

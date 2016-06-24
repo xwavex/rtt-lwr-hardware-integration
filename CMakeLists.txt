@@ -1,7 +1,11 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(rtt-gazebo-lwr-integration)
+
+execute_process(COMMAND /usr/xenomai/bin/xeno-config --skin=native --cflags OUTPUT_VARIABLE XENO_NATIVE_CFLAGS OUTPUT_STRIP_TRAILING_WHITESPACE)
+execute_process(COMMAND /usr/xenomai/bin/xeno-config --skin=native --ldflags OUTPUT_VARIABLE XENO_NATIVE_LDFLAGS OUTPUT_STRIP_TRAILING_WHITESPACE)
+
 set(CMAKE_BUILD_TYPE Release)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -g -Wall -O3 -fPIC -DHAVE_SOCKLEN_T")
 #list(APPEND CMAKE_CXX_FLAGS "-std=c++11")
 ## Find catkin macros and libraries
 #find_package(catkin REQUIRED COMPONENTS 
@@ -30,7 +34,7 @@ message(STATUS "GAZEBO_INCLUDE_DIRS: ${GAZEBO_INCLUDE_DIRS}")
 message(STATUS "GAZEBO_LIBRARIES: ${GAZEBO_LIBRARIES}")
 #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${GAZEBO_CXX_FLAGS}")
 
-set ( CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/eigen/  )
+set ( CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/Modules/  )
 find_package(Eigen REQUIRED)
 find_package(Boost COMPONENTS thread REQUIRED)
 
@@ -54,10 +58,18 @@ link_directories(${NemoMath_LIBRARY_DIR})
 
 #find_package(orocos_kdl REQUIRED)
 
+find_package(Boost COMPONENTS system filesystem thread REQUIRED)
+
+find_package(RTnet REQUIRED)
+
 link_directories(
   ${GAZEBO_LIBRARY_DIRS}
   ${orocos_kdl_LIBRARY_DIRS}
+  ${PROJECT_NAME_BIN}/lib 
+  ${Boost_LIBRARY_DIR}
   )
+  
+  SET(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/lib)
 
 include_directories(include
   ${Boost_INCLUDE_DIR}
@@ -65,7 +77,13 @@ include_directories(include
   ${orocos_kdl_INCLUDE_DIRS}
   ${USE_OROCOS_INCLUDE_DIRS}
   ${Eigen_INCLUDE_DIR}
+  ${RTNET_INCLUDE_DIR}
   )
+ 
+ ADD_LIBRARY(FRI_RT
+  src/friremote_rt.cpp  
+  src/friudp_rt.cpp  
+)
 
 orocos_use_package( ocl-taskbrowser )
 orocos_use_package( ocl-deployment )
@@ -79,7 +97,7 @@ if(${OROCOS_TARGET} STREQUAL "xenomai" )
   find_package(Xenomai REQUIRED)
   set_property(DIRECTORY ${PROJECT_SOURCE_DIR} APPEND PROPERTY COMPILE_DEFINITIONS HAVE_RTNET XENOMAI)
 endif()
-
+ message(STATUS "HELP ${RTNET_LIBRARIES}\n---------------------\n")
 ## Default component
 orocos_component(lwr_gazebo src/lwr_gazebo_component.cpp)
 set_target_properties(lwr_gazebo PROPERTIES COMPILE_DEFINITIONS RTT_COMPONENT)
@@ -95,6 +113,26 @@ target_link_libraries(lwr_gazebo
   ${Boost_LIBRARIES}
   ${NemoMath_LIBRARIES}
   ${RSC_LIBRARIES}
-  ${RCI_LIBRARIES})
+  ${RCI_LIBRARIES}
+ )
+  
+orocos_component(lwr_fri src/lwr_fri_component.cpp)
+set_target_properties(lwr_fri PROPERTIES COMPILE_DEFINITIONS RTT_COMPONENT)
+target_link_libraries(lwr_fri 
+  ${orocos_kdl_LIBRARIES} 
+  ${GAZEBO_LIBRARIES} 
+  ${OROCOS-RTT_LIBRARIES}
+  ${OROCOS-RTT_LIBRARIES} 
+  ${OROCOS-RTT_RTT-SCRIPTING_LIBRARY} 
+  ${OROCOS-RTT_RTT-TRANSPORT-CORBA_LIBRARY}
+  ${OROCOS-RTT_TYPEKIT_LIBRARIES}
+  ${USE_OROCOS_LIBRARIES}
+  ${Boost_LIBRARIES}
+  ${NemoMath_LIBRARIES}
+  ${RSC_LIBRARIES}
+  ${RCI_LIBRARIES}
+   FRI_RT
+   ${XENO_NATIVE_LDFLAGS}
+   -lrtdm)
 
 orocos_generate_package()

@@ -8,7 +8,7 @@ lwr_fri.configure()
 lwr_fri.start()
 
 loadComponent("lwr_osf_controller","RttLwrOSFController");
-lwr_osf_controller.parseURDFforKDL(lwr_fri.misc.urdf_string)
+lwr_osf_controller.parseURDFforKDL("/home/dynamics/cogimon/development/cogimon-gazebo-models/kuka-dual-arm/boris-robot.urdf")
 setActivity("lwr_osf_controller",0.001,HighestPriority,ORO_SCHED_RT)
 
 var ConnPolicy cp_ctrl_gz;
@@ -23,17 +23,17 @@ connect("lwr_fri.JointVelocity","lwr_osf_controller.currJntVel",cp_ctrl_gz);
 // define khatib gains
 // define specification
 set lwr_osf_controller.use_original_khatib_controller = 1;
-set lwr_osf_controller.use_euler_orientation = 1;
+set lwr_osf_controller.use_euler_orientation = 0;
 
 // define khatib gains
-set lwr_osf_controller.Kp_cartTranslationKhatibGain = 400;
-set lwr_osf_controller.Kd_cartTranslationKhatibGain = 200;
-set lwr_osf_controller.Kp_cartOrientationEulerKhatibGain = 400;
+set lwr_osf_controller.Kp_cartTranslationKhatibGain = 20;
+set lwr_osf_controller.Kd_cartTranslationKhatibGain = 10;
+set lwr_osf_controller.Kp_cartOrientationEulerKhatibGain = 20;
 set lwr_osf_controller.Kd_cartOrientationEulerKhatibGain = 10;
 set lwr_osf_controller.Kp_cartOrientationQuaternionKhatibGain = 72;
 set lwr_osf_controller.Kd_cartOrientationQuaternionKhatibGain = 100; // here the rule 2*sqrt() does not make sense because of different comparisons
-set lwr_osf_controller.Kp_jointKhatibGain = 200;
-set lwr_osf_controller.Kd_jointKhatibGain = 10;
+set lwr_osf_controller.Kp_jointKhatibGain = 5;
+set lwr_osf_controller.Kd_jointKhatibGain = 1;
 
 // define constrained projection gains
 set lwr_osf_controller.Kp_cartTranslationConstrainedGain = 200;
