@@ -76,9 +76,6 @@ public:
 
 	bool loadURDFFileIntoString(const std::string &path, std::string& xmlOut);
 
-	void convertRealVectorToEigenVectorXd(
-			const nemo::RealVector& realV, Eigen::VectorXd& vXd);
-
 private:
 	KDL::Vector toKdl(urdf::Vector3 v);
 	KDL::Rotation toKdl(urdf::Rotation r);

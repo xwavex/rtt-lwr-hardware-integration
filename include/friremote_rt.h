@@ -48,11 +48,12 @@
 
 #include <friudp_rt.h>
 #include <string.h>
+#include <rtt/os/fosi_internal_interface.hpp>
 
 class friRemote
 {
  public:
-  friRemote(int port = FRI_DEFAULT_SERVER_PORT, const char * hintToRemoteHost=NULL);
+  friRemote(int port = FRI_DEFAULT_SERVER_PORT, const char * hintToRemoteHost=NULL,RTOS_TASK* task=NULL);
   ~friRemote();
 
   /** Data Exchanger -- normally update within access routine implicitely 
@@ -196,6 +197,8 @@ class friRemote
 
   int inCount;
   int outCount;
+
+  RTOS_TASK* main_task;
 
 };
 

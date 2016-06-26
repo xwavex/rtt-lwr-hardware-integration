@@ -1,5 +1,5 @@
-# rtt-gazebo-lwr-integration
-RTT component using a Gazebo model pointer to integrate RTT and Gazebo for the Kuka LWR. Based on https://github.com/kuka-isir/rtt_lwr/tree/master/rtt_lwr_gazebo
+# rtt-lwr-hardware-integration
+RTT Component integrating the FRI library, with RTNET providing real-time communication, into the orocos framework
 
 ## Install
 
@@ -11,14 +11,14 @@ RTT component using a Gazebo model pointer to integrate RTT and Gazebo for the K
 
 `export PKG_CONFIG_PATH=$insert-prefix-here/lib/pkgconfig`
 
-`cmake -Dgazebo_DIR=$insert-prefix-here/lib/cmake/gazebo -Dignition-math2_DIR=$insert-prefix-here/lib/cmake/ignition-math2 -DSDFormat_DIR=$insert-prefix-here/lib/cmake/sdformat -DOROCOS-RTT_DIR=$insert-prefix-here/lib/cmake/orocos-rtt ..`
+`cmake -DOROCOS-RTT_DIR=$insert-prefix-here/lib/cmake/orocos-rtt ..`
 
 `make -j 4`
 
 // include RTT component in search path
 
-`export RTT_COMPONENT_PATH=$RTT_COMPONENT_PATH:$include-path-to/rtt-gazebo-lwr-integration/build/orocos`
+`export RTT_COMPONENT_PATH=$RTT_COMPONENT_PATH:$include-path-to/rtt-lwr-hardware-integration/build/orocos`
 
 ## TODO
 
-- Exclude Eigen folder
+- check FRI interface to make sure communication is done through OROCOS interfaces rather than straight to xenomai

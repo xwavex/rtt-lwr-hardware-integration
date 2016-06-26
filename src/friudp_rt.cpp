@@ -46,7 +46,6 @@
 #pragma comment(lib, "ws2_32.lib") 
 #endif // WIN32
 
-#include <native/task.h>
 #include <rtnet.h>
 #include <errno.h>
 #include <unistd.h>

@@ -27,12 +27,6 @@ endif()
 
 include(${OROCOS-RTT_USE_FILE_PATH}/UseOROCOS-RTT.cmake )
 
-# Depend on system install of Gazebo 
-find_package(gazebo REQUIRED)
-message(STATUS "GAZEBO version: ${GAZEBO_VERSION}") 
-message(STATUS "GAZEBO_INCLUDE_DIRS: ${GAZEBO_INCLUDE_DIRS}")
-message(STATUS "GAZEBO_LIBRARIES: ${GAZEBO_LIBRARIES}")
-#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${GAZEBO_CXX_FLAGS}")
 
 set ( CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/Modules/  )
 find_package(Eigen REQUIRED)
@@ -49,12 +43,6 @@ message(STATUS "RSC version: ${RSC_VERSION}")
 include_directories(BEFORE SYSTEM ${RSC_INCLUDE_DIRS})	
 add_definitions(${RSC_CFLAGS})
 link_directories(${RSC_LIBRARY_DIR})
-
-find_package(NemoMath REQUIRED)
-message(STATUS "NemoMath version: ${NemoMath_VERSION}")	
-include_directories(BEFORE SYSTEM ${NemoMath_INCLUDE_DIRS})	
-add_definitions(${NemoMath_CFLAGS})
-link_directories(${NemoMath_LIBRARY_DIR})
 
 #find_package(orocos_kdl REQUIRED)
 
@@ -77,7 +65,7 @@ include_directories(include
   ${orocos_kdl_INCLUDE_DIRS}
   ${USE_OROCOS_INCLUDE_DIRS}
   ${Eigen_INCLUDE_DIR}
-  ${RTNET_INCLUDE_DIR}
+  ${RTnet_INCLUDE_DIR}
   )
  
  ADD_LIBRARY(FRI_RT
@@ -99,22 +87,6 @@ if(${OROCOS_TARGET} STREQUAL "xenomai" )
 endif()
  message(STATUS "HELP ${RTNET_LIBRARIES}\n---------------------\n")
 ## Default component
-orocos_component(lwr_gazebo src/lwr_gazebo_component.cpp)
-set_target_properties(lwr_gazebo PROPERTIES COMPILE_DEFINITIONS RTT_COMPONENT)
-target_link_libraries(lwr_gazebo 
-  ${orocos_kdl_LIBRARIES} 
-  ${GAZEBO_LIBRARIES} 
-  ${OROCOS-RTT_LIBRARIES}
-  ${OROCOS-RTT_LIBRARIES} 
-  ${OROCOS-RTT_RTT-SCRIPTING_LIBRARY} 
-  ${OROCOS-RTT_RTT-TRANSPORT-CORBA_LIBRARY}
-  ${OROCOS-RTT_TYPEKIT_LIBRARIES}
-  ${USE_OROCOS_LIBRARIES}
-  ${Boost_LIBRARIES}
-  ${NemoMath_LIBRARIES}
-  ${RSC_LIBRARIES}
-  ${RCI_LIBRARIES}
- )
   
 orocos_component(lwr_fri src/lwr_fri_component.cpp)
 set_target_properties(lwr_fri PROPERTIES COMPILE_DEFINITIONS RTT_COMPONENT)
@@ -128,7 +100,6 @@ target_link_libraries(lwr_fri
   ${OROCOS-RTT_TYPEKIT_LIBRARIES}
   ${USE_OROCOS_LIBRARIES}
   ${Boost_LIBRARIES}
-  ${NemoMath_LIBRARIES}
   ${RSC_LIBRARIES}
   ${RCI_LIBRARIES}
    FRI_RT

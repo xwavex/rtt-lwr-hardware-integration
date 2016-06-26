@@ -45,11 +45,10 @@
 #include <iostream>
 #include <sstream>
 #include <stdlib.h>
-#include <native/task.h>
 
 std::ostringstream stream;
 
-friRemote::friRemote(int port, const char *hintToRemoteHost) 
+friRemote::friRemote(int port, const char *hintToRemoteHost, RTOS_TASK* task) 
   : remote(port,hintToRemoteHost)
   , seqCount(0)
   , inCount(0)
@@ -78,6 +77,7 @@ friRemote::friRemote(int port, const char *hintToRemoteHost)
 
       }
   }
+  main_task = task;
 }
 
 friRemote::~friRemote()
@@ -141,7 +141,8 @@ int friRemote::doSendData()
 int friRemote::doDataExchange()
 {
   doSendData();
-  rt_task_wait_period(NULL);
+RTT::os::rtos_task_wait_period(main_task);
+  //rt_task_wait_period(NULL);
   return doReceiveData();
 }
 

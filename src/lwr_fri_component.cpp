@@ -20,10 +20,6 @@
 #include <rci/dto/JointAngles.h>
 #include <rci/dto/JointTorques.h>
 #include <rci/dto/JointVelocities.h>
-
-#include <nemo/Vector.h>
-#include <nemo/Mapping.h>
-
 #define l(lvl) RTT::log(lvl) << "[" << this->getName() << "] "
 
 class LWRFriComponent: public RTT::TaskContext {
@@ -212,7 +208,7 @@ friInst->setToKRLInt(1,30);
 				&& port_JointVelocityCommand.connected() &&port_JointPosition.connected()&&port_JointVelocity.connected() && port_JointTorque.connected())) {
 			return false
 		}
-		friInst = new friRemote(49939, "192.168.0.21");
+		friInst = new friRemote(49939, "192.168.0.21",getTask());
 		lastQuality = FRI_QUALITY_BAD;
 		RTT::log(RTT::Info)<<"CONFIGURE HOOK!\n"<<RTT::endlog();
 		//possibly read and handshake with KRC here until perfect quality?
