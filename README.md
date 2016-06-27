@@ -1,6 +1,11 @@
 # rtt-lwr-hardware-integration
 RTT Component integrating the FRI library, with RTNET providing real-time communication, into the orocos framework
 
+## Features
+- POSITION CONTROL MODE (Not implemented yet)
+- TORQUE CONTROL MODE
+  - Through joint impedance control mode, gravity is compensated through the KRC unit!
+
 ## Install
 
 `mkdir build`
