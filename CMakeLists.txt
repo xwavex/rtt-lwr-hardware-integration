@@ -1,8 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(rtt-gazebo-lwr-integration)
-
-execute_process(COMMAND /usr/xenomai/bin/xeno-config --skin=native --cflags OUTPUT_VARIABLE XENO_NATIVE_CFLAGS OUTPUT_STRIP_TRAILING_WHITESPACE)
-execute_process(COMMAND /usr/xenomai/bin/xeno-config --skin=native --ldflags OUTPUT_VARIABLE XENO_NATIVE_LDFLAGS OUTPUT_STRIP_TRAILING_WHITESPACE)
+project(rtt-lwr-hardware-integration)
 
 set(CMAKE_BUILD_TYPE Release)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -g -Wall -O3 -fPIC -DHAVE_SOCKLEN_T")
@@ -44,11 +41,20 @@ include_directories(BEFORE SYSTEM ${RSC_INCLUDE_DIRS})
 add_definitions(${RSC_CFLAGS})
 link_directories(${RSC_LIBRARY_DIR})
 
+if(${OROCOS_TARGET} STREQUAL "xenomai" )
+  find_package(Xenomai REQUIRED)
+  set_property(DIRECTORY ${PROJECT_SOURCE_DIR} APPEND PROPERTY COMPILE_DEFINITIONS XENOMAI)
+endif()
+
+if(${RTNET_FOUND})
+  find_package(RTnet REQUIRED)
+  set_property(DIRECTORY ${PROJECT_SOURCE_DIR} APPEND PROPERTY COMPILE_DEFINITIONS HAVE_RTNET)
+  set(RTLIB_LIBRARIES -lrtdm)
+endif()
+
 #find_package(orocos_kdl REQUIRED)
 
 find_package(Boost COMPONENTS system filesystem thread REQUIRED)
-
-find_package(RTnet REQUIRED)
 
 link_directories(
   ${GAZEBO_LIBRARY_DIRS}
@@ -81,11 +87,6 @@ orocos_use_package( orocos-rtt-corba )
 
 #add_definitions(${OROCOS-RTT_DEFINITIONS})
 
-if(${OROCOS_TARGET} STREQUAL "xenomai" )
-  find_package(Xenomai REQUIRED)
-  set_property(DIRECTORY ${PROJECT_SOURCE_DIR} APPEND PROPERTY COMPILE_DEFINITIONS HAVE_RTNET XENOMAI)
-endif()
- message(STATUS "HELP ${RTNET_LIBRARIES}\n---------------------\n")
 ## Default component
   
 orocos_component(lwr_fri src/lwr_fri_component.cpp)
@@ -104,6 +105,7 @@ target_link_libraries(lwr_fri
   ${RCI_LIBRARIES}
    FRI_RT
    ${XENO_NATIVE_LDFLAGS}
-   -lrtdm)
+   ${RTLIB_LIBRARIES}
+   )
 
 orocos_generate_package()

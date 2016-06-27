@@ -41,6 +41,15 @@
 #ifndef FRIFRIUDPRT_H
 #define FRIFRIUDPRT_H
 
+#ifdef WIN32
+#include <winsock2.h>
+#pragma comment(lib, "ws2_32.lib")
+#endif // WIN32
+
+#ifdef HAVE_RTNET
+#include <rtnet.h>
+#endif
+
 #ifdef VXWORKS
 #else
 #define HAVE_GETHOSTNAME
@@ -66,6 +75,9 @@
 #include <fricomm_rt.h>
 
 #include <iostream>
+#include <errno.h>
+#include <unistd.h>
+#include <string.h>
 
 #ifdef VXWORKS // VxWorks Kernel
 

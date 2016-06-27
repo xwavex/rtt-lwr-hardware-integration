@@ -1,6 +1,3 @@
-#include <gazebo/gazebo.hh>
-#include <gazebo/physics/physics.hh>
-#include <gazebo/common/common.hh>
 
 #include <rtt/Component.hpp>
 #include <rtt/Port.hpp>
@@ -14,6 +11,7 @@
 #include <rtt/os/Timer.hpp>
 #include <rtt/os/TimeService.hpp>
 #include <boost/thread/mutex.hpp>
+#include <boost/atomic.hpp>
 #include <friremote_rt.h>
 //#include <friudp_rt.h>
 
@@ -206,9 +204,9 @@ friInst->setToKRLInt(1,30);
 		if (!(port_JointPositionCommand.connected()
 				&& port_JointTorqueCommand.connected()
 				&& port_JointVelocityCommand.connected() &&port_JointPosition.connected()&&port_JointVelocity.connected() && port_JointTorque.connected())) {
-			return false
+			return false;
 		}
-		friInst = new friRemote(49939, "192.168.0.21",getTask());
+		friInst = new friRemote(49939, "192.168.0.21",getActivity()->thread()->getTask());
 		lastQuality = FRI_QUALITY_BAD;
 		RTT::log(RTT::Info)<<"CONFIGURE HOOK!\n"<<RTT::endlog();
 		//possibly read and handshake with KRC here until perfect quality?
@@ -253,8 +251,7 @@ friInst->setToKRLInt(1,30);
 		data_timestamp = new_pos_timestamp =
 				RTT::os::TimeService::Instance()->getNSecs();
 
-		read_duration_ = RTT::os::TimeService::Instance()->secondsSince(
-				read_start);
+		//read_duration_ = RTT::os::TimeService::Instance()->secondsSince(read_start);
 
 		// Write state to ports
 		RTT::os::TimeService::ticks write_start =
@@ -293,10 +290,6 @@ protected:
 
 	std::vector<int> joints_idx;
 
-	std::map<gazebo::physics::LinkPtr, bool> gravity_mode_;
-
-	std::vector<gazebo::physics::JointPtr> gazebo_joints_;
-	gazebo::physics::Link_V model_links_;
 	std::vector<std::string> joint_names_;
 
 	RTT::InputPort<rci::JointAnglesPtr> port_JointPositionCommand;
