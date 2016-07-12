@@ -194,6 +194,5 @@ bool lwr_robot::configureHook() {
 
 
 ORO_CREATE_COMPONENT_LIBRARY()
-//ORO_CREATE_COMPONENT(cogimon::lwrSim)
 ORO_LIST_COMPONENT_TYPE(cogimon::lwr_robot)
 
