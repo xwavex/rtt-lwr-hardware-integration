@@ -27,3 +27,5 @@ RTT Component integrating the FRI library, with RTNET providing real-time commun
 ## TODO
 
 - check FRI interface to make sure communication is done through OROCOS interfaces rather than straight to xenomai
+
+- test on Kuka arms to make sure various interfaces work and communication works as well
