@@ -1,5 +1,0 @@
-
-
-setActivity("lwr_gazebo",0.001,HighestPriority,ORO_SCHED_RT)
-lwr_gazebo.configure()
-lwr_gazebo.start()

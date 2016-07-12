@@ -46,18 +46,40 @@ if(${OROCOS_TARGET} STREQUAL "xenomai" )
   set_property(DIRECTORY ${PROJECT_SOURCE_DIR} APPEND PROPERTY COMPILE_DEFINITIONS XENOMAI)
 endif()
 
+find_package(RTnet)
 if(${RTNET_FOUND})
-  find_package(RTnet REQUIRED)
   set_property(DIRECTORY ${PROJECT_SOURCE_DIR} APPEND PROPERTY COMPILE_DEFINITIONS HAVE_RTNET)
   set(RTLIB_LIBRARIES -lrtdm)
 endif()
+
+find_package(RST-RT REQUIRED)
+message(STATUS "RST-RT version: ${RST-RT_VERSION}")
+include_directories(BEFORE SYSTEM ${RST-RT_INCLUDE_DIRS})
+add_definitions(${RST-RT_CFLAGS})
+link_directories(${RST-RT_LIBRARY_DIR} ${RST-RT_LIBRARY_DIRS})
+
+find_package(PkgConfig REQUIRED)
+pkg_search_module(TINYXML REQUIRED tinyxml)
+if(NOT TINYXML_INCLUDE_DIR)
+        find_path("/usr/include" tinyxml.h)
+        find_library(TINYXML_LIBRARY NAMES tinyxml)
+        set(TINYXML_LIBRARIES ${TINYXML_LIBRARY})
+    set(TINYXML_INCLUDE_DIRS ${TINYXML_INCLUDE_DIR})
+    set(TINYXML_LIBRARY_DIR "/usr/lib/x86_64-linux-gnu")
+endif()
+message(STATUS "TINYXML_VERSION: ${TINYXML_VERSION}")
+include_directories(BEFORE SYSTEM ${TINYXML_INCLUDE_DIRS})
+link_directories(${TINYXML_LIBRARY_DIR})
+message(STATUS "TINYXML_LIBRARIES: ${TINYXML_LIBRARIES}")
+message(STATUS "TINYXML_LIBRARY_DIR: ${TINYXML_LIBRARY_DIR}")
+message(STATUS "TINYXML_INCLUDE_DIR: ${TINYXML_INCLUDE_DIRS}")
+message(STATUS "TINYXML_LIBRARY: ${TINYXML_LIBRARY}")
 
 #find_package(orocos_kdl REQUIRED)
 
 find_package(Boost COMPONENTS system filesystem thread REQUIRED)
 
 link_directories(
-  ${GAZEBO_LIBRARY_DIRS}
   ${orocos_kdl_LIBRARY_DIRS}
   ${PROJECT_NAME_BIN}/lib 
   ${Boost_LIBRARY_DIR}
@@ -67,11 +89,12 @@ link_directories(
 
 include_directories(include
   ${Boost_INCLUDE_DIR}
-  ${GAZEBO_INCLUDE_DIRS}
   ${orocos_kdl_INCLUDE_DIRS}
   ${USE_OROCOS_INCLUDE_DIRS}
   ${Eigen_INCLUDE_DIR}
   ${RTnet_INCLUDE_DIR}
+  ${RST-RT_INCLUDE_DIRS}
+  ${TINYXML_INCLUDE_DIRS}
   )
  
  ADD_LIBRARY(FRI_RT
@@ -93,7 +116,6 @@ orocos_component(lwr_fri src/lwr_fri_component.cpp)
 set_target_properties(lwr_fri PROPERTIES COMPILE_DEFINITIONS RTT_COMPONENT)
 target_link_libraries(lwr_fri 
   ${orocos_kdl_LIBRARIES} 
-  ${GAZEBO_LIBRARIES} 
   ${OROCOS-RTT_LIBRARIES}
   ${OROCOS-RTT_LIBRARIES} 
   ${OROCOS-RTT_RTT-SCRIPTING_LIBRARY} 
@@ -106,6 +128,8 @@ target_link_libraries(lwr_fri
    FRI_RT
    ${XENO_NATIVE_LDFLAGS}
    ${RTLIB_LIBRARIES}
+   ${RST-RT_LIBRARIES}
+    ${TINYXML_LIBRARIES}
    )
 
-orocos_generate_package()
+orocos_generate_package(INCLUDE_DIRS include)
