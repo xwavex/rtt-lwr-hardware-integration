@@ -77,6 +77,11 @@ message(STATUS "TINYXML_LIBRARY_DIR: ${TINYXML_LIBRARY_DIR}")
 message(STATUS "TINYXML_INCLUDE_DIR: ${TINYXML_INCLUDE_DIRS}")
 message(STATUS "TINYXML_LIBRARY: ${TINYXML_LIBRARY}")
 
+find_package(urdfdom REQUIRED)
+include_directories(BEFORE SYSTEM ${urdfdom_INCLUDE_DIRS})
+link_directories(BEFORE SYSTEM ${urdfdom_LIBRARY_DIR})
+
+
 #find_package(orocos_kdl REQUIRED)
 
 find_package(Boost COMPONENTS system filesystem thread REQUIRED)
@@ -132,6 +137,7 @@ target_link_libraries(lwr_fri
    ${RTLIB_LIBRARIES}
    ${RST-RT_LIBRARIES}
     ${TINYXML_LIBRARIES}
+    ${urdfdom_LIBRARIES}
    )
 
 orocos_generate_package(INCLUDE_DIRS include)
