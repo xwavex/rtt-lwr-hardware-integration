@@ -166,7 +166,7 @@ bool lwr_robot::configureHook() {
 			<< RTT::endlog();
 
 	hardcoded_chains chains;
-	std::map<std::string, std::pair<std::string,std::vector<std::string>>>::iterator it;
+	std::map<std::string, std::pair<std::string,std::vector<std::pair<std::string,int>>>>::iterator it;
 	for (it = chains.map_chains_joints.begin();
 			it != chains.map_chains_joints.end(); it++) {
 		kinematic_chains.insert(
@@ -174,7 +174,7 @@ bool lwr_robot::configureHook() {
 						it->first,
 						boost::shared_ptr<KinematicChain>(//TODO FRI INST
 								new KinematicChain(it->first, it->second.second,
-										*(this->ports()), new friRemote(49939, it->second.first, this->getActivity()->thread()->getTask())))));
+										*(this->ports()), new friRemote(49939, it->second.first.c_str(), this->getActivity()->thread()->getTask())))));
 	}
 	RTT::log(RTT::Info) << "Kinematic Chains map created!" << RTT::endlog();
 	for (std::map<std::string, boost::shared_ptr<KinematicChain>>::iterator it =

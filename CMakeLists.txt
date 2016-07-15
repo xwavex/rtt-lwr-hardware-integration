@@ -80,9 +80,13 @@ message(STATUS "TINYXML_LIBRARY: ${TINYXML_LIBRARY}")
 find_package(urdfdom REQUIRED)
 include_directories(BEFORE SYSTEM ${urdfdom_INCLUDE_DIRS})
 link_directories(BEFORE SYSTEM ${urdfdom_LIBRARY_DIR})
+message(STATUS ${URDFDOM_INCLUDE_DIRS})
+message(STATUS "dom_ ${urdfdom_INCLUDE_DIRS}")
 
+find_package(orocos_kdl REQUIRED)
+include_directories(BEFORE SYSTEM ${orocos_kdl_INCLUDE_DIRS})
+link_directories(${orocos_kdl_LIBRARY_DIRS})
 
-#find_package(orocos_kdl REQUIRED)
 
 find_package(Boost COMPONENTS system filesystem thread REQUIRED)
 
@@ -103,6 +107,7 @@ include_directories(include
   ${RTNET_INCLUDE_DIR}
   ${RST-RT_INCLUDE_DIRS}
   ${TINYXML_INCLUDE_DIRS}
+${urdfdom_INCLUDE_DIRS}
   )
  
  ADD_LIBRARY(FRI_RT
@@ -120,12 +125,11 @@ orocos_use_package( orocos-rtt-corba )
 
 ## Default component
   
-orocos_component(lwr_fri src/rtt-lwr-robot.cpp src/rtt-lwr-robot_hooks.cpp src/kinematic_chain.cpp)
+orocos_component(lwr_fri src/friudp_rt.cpp src/friremote_rt.cpp src/parsertools/KDLParser.hpp src/parsertools/KDLParser.cpp src/rtt-lwr-robot.cpp src/rtt-lwr-robot_hooks.cpp src/kinematic_chain.cpp)
 set_target_properties(lwr_fri PROPERTIES COMPILE_DEFINITIONS RTT_COMPONENT)
 target_link_libraries(lwr_fri 
   ${orocos_kdl_LIBRARIES} 
   ${OROCOS-RTT_LIBRARIES}
-  ${OROCOS-RTT_LIBRARIES} 
   ${OROCOS-RTT_RTT-SCRIPTING_LIBRARY} 
   ${OROCOS-RTT_RTT-TRANSPORT-CORBA_LIBRARY}
   ${OROCOS-RTT_TYPEKIT_LIBRARIES}

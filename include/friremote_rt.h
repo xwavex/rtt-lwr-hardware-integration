@@ -185,11 +185,12 @@ class friRemote
     else {cmd.krl.boolData &= (~(1<<index));}}
   void setToKRLBool(fri_uint16_t val) {   cmd.krl.boolData = val; }
   /* @} */
+friUdp remote;
  protected:
   tFriMsrData msr;
   tFriCmdData cmd;
  private:
-  friUdp remote;
+  
   int seqCount;
   std::string flags;
   std::string recv_msr;

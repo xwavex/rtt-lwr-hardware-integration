@@ -375,7 +375,7 @@ void KinematicChain::move() {
 std::string KinematicChain::printKinematicChainInformation() {
 	std::stringstream joint_names_stream;
 	for (unsigned int i = 0; i < _joint_names.size(); ++i)
-		joint_names_stream << _joint_names[i] << " ";
+		joint_names_stream << _joint_names[i].first << " ";
 
 	std::vector<std::string> controller_names = getControllersAvailable();
 	std::stringstream controller_names_stream;

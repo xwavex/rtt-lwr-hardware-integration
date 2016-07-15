@@ -153,12 +153,13 @@ class friUdp{
  public:
   int Send(tFriCmdData *data);
   int Recv(tFriMsrData *packet);
+struct sockaddr_in krcAddr;
  private:
   int RecvPacket(int fd, tFriMsrData* p, struct timeval* ts, struct sockaddr_in* client);
   /// socket
   int udp_socket_;
   int serverPort;
-  struct sockaddr_in krcAddr;
+  
   /// if timestamp on receive is available, last received value can be inquired here
   double m_timestamp;
  public:

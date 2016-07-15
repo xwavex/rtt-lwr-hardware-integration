@@ -23,7 +23,7 @@
 #include <control_modes.h>
 #include <kinematic_chain.h>
 #include <boost/shared_ptr.hpp>
-#include <urdf/model.h>
+#include <urdf_parser/urdf_parser.h>
 
 namespace cogimon {
 
