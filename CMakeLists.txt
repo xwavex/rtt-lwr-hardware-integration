@@ -92,7 +92,7 @@ include_directories(include
   ${orocos_kdl_INCLUDE_DIRS}
   ${USE_OROCOS_INCLUDE_DIRS}
   ${Eigen_INCLUDE_DIR}
-  ${RTnet_INCLUDE_DIR}
+  ${RTNET_INCLUDE_DIR}
   ${RST-RT_INCLUDE_DIRS}
   ${TINYXML_INCLUDE_DIRS}
   )
