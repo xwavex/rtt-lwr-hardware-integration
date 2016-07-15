@@ -115,7 +115,7 @@ orocos_use_package( orocos-rtt-corba )
 
 ## Default component
   
-orocos_component(lwr_fri src/lwr_fri_component.cpp)
+orocos_component(lwr_fri src/rtt-lwr-robot.cpp src/rtt-lwr-robot_hooks.cpp src/kinematic_chain.cpp)
 set_target_properties(lwr_fri PROPERTIES COMPILE_DEFINITIONS RTT_COMPONENT)
 target_link_libraries(lwr_fri 
   ${orocos_kdl_LIBRARIES} 
