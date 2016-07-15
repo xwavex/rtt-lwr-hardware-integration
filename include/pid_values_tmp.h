@@ -8,10 +8,10 @@ public:
 		std::vector<std::pair<std::string,int>> joints;
 
 		joints.push_back(std::pair<std::string,int>("lwr_arm_0_joint",0));
-		map_chains_joints.insert(
-				std::pair<std::string, std::vector<std::string>>("base",
-						joints));
-		joints.clear();
+		//map_chains_joints.insert(
+			//	std::pair<std::string, std::vector<std::string>>("base",
+				//		joints));
+		//joints.clear();
 
 		joints.push_back(std::pair<std::string,int>("lwr_arm_1_joint",1));
 		joints.push_back(std::pair<std::string,int>("lwr_arm_2_joint",2));
