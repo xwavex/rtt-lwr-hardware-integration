@@ -43,6 +43,7 @@ link_directories(${RSC_LIBRARY_DIR})
 
 if(${OROCOS_TARGET} STREQUAL "xenomai" )
   find_package(Xenomai REQUIRED)
+  message(STATUS Xenomai_LIBRARY_DIRS)
   set_property(DIRECTORY ${PROJECT_SOURCE_DIR} APPEND PROPERTY COMPILE_DEFINITIONS XENOMAI)
 endif()
 
