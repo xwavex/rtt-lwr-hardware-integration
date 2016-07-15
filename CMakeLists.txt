@@ -83,6 +83,7 @@ link_directories(
   ${orocos_kdl_LIBRARY_DIRS}
   ${PROJECT_NAME_BIN}/lib 
   ${Boost_LIBRARY_DIR}
+  ${Xenomai_LIBRARY_DIRS}
   )
   
   SET(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/lib)
@@ -126,7 +127,6 @@ target_link_libraries(lwr_fri
   ${RSC_LIBRARIES}
   ${RCI_LIBRARIES}
    FRI_RT
-   ${XENO_NATIVE_LDFLAGS}
    ${RTLIB_LIBRARIES}
    ${RST-RT_LIBRARIES}
     ${TINYXML_LIBRARIES}
