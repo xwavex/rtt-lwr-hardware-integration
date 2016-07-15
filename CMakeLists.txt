@@ -49,7 +49,7 @@ endif()
 find_package(RTnet)
 if(${RTNET_FOUND})
   set_property(DIRECTORY ${PROJECT_SOURCE_DIR} APPEND PROPERTY COMPILE_DEFINITIONS HAVE_RTNET)
-  set(RTLIB_LIBRARIES -lrtdm)
+  set(RTLIB_LIBRARIES rtdm)
 endif()
 
 find_package(RST-RT REQUIRED)
