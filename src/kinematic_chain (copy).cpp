@@ -240,9 +240,7 @@ bool KinematicChain::setControlMode(const std::string &controlMode) {
 		return false;
 	}
 	RTT::log(RTT::Warning) << "CHAGING TO CONTROL" << RTT::endlog();
-	if(controlMode == ControlModes::JointPositionCtrl){
-		_fri_inst->getCmdBuf().cmd.cmdFlags=FRI_CMD_JNTPOS;
-	}
+	
 //	else if (controlMode == ControlModes::JointTorqueCtrl
 //			|| controlMode == ControlModes::JointImpedanceCtrl)
 //		_gazebo_position_joint_controller->Reset();
@@ -250,8 +248,10 @@ bool KinematicChain::setControlMode(const std::string &controlMode) {
 	_current_control_mode = controlMode;
 	return true;
 }
-/*
-if(last_quality!= FRI_QUALITY::FRI_QUALITY_PERFECT){
+
+void KinematicChain::sense() {
+_fri_inst->doReceiveData();
+	if(last_quality!= FRI_QUALITY::FRI_QUALITY_PERFECT){
 	RTT::log(RTT::Info) << "recieve_data!" << RTT::endlog();
 	
 	_fri_inst->setToKRLInt(0, 1);
@@ -269,30 +269,6 @@ RTT::log(RTT::Info) << "Trying to initialize :"<<_fri_inst->getQuality()
 _fri_inst->doSendData();
 		}
 	if(_fri_inst->getQuality()!= FRI_QUALITY::FRI_QUALITY_PERFECT){
-		return;
-	}
-*/
-
-void KinematicChain::sense() {
-	_fri_inst->doReceiveData();
-	RTT::log(RTT::Info) << _fri_inst->getFrmKRLInt(14)<<", "<<_fri_inst->getFrmKRLInt(15) << RTT::endlog();
-	_fri_inst->setToKRLInt(15,0);
-	if(_fri_inst->getFrmKRLInt(15) == 10){
-		RTT::log(RTT::Info) << "gogo!" << RTT::endlog();
-		_fri_inst->setToKRLInt(15,10);
-		_fri_inst->setToKRLInt(14,10);
-		_fri_inst->doTest();
-		_fri_inst->doDataExchange();
-		return;
-	}
-	RTT::log(RTT::Info) << "gogo!" << RTT::endlog();
-	/*if(_fri_inst->getFrmKRLInt(15) == 10 && _fri_inst->getCurrentControlScheme()
-				== FRI_CTRL::FRI_CTRL_POSITION){
-		_fri_inst->setToKRLInt(15,10);
-		_fri_inst->doDataExchange();
-		return;
-}*/
-	if(_fri_inst->getFrmKRLInt(15)!=20){
 		return;
 	}
 	if (full_feedback) {
@@ -346,38 +322,30 @@ RTT::log(RTT::Info) << "commamd!" << RTT::endlog();
 }
 
 void KinematicChain::move() {
-/*if(_fri_inst->getQuality()!= FRI_QUALITY::FRI_QUALITY_PERFECT){
+if(_fri_inst->getQuality()!= FRI_QUALITY::FRI_QUALITY_PERFECT){
 		
 		return;
-	}*/
-if(_fri_inst->getFrmKRLInt(15)==20){
+	}
 RTT::log(RTT::Info) << "movce! "<<_current_control_mode << RTT::endlog();
 	if (_current_control_mode == ControlModes::JointPositionCtrl) {
-		//if(_fri_inst->getCurrentControlScheme()
-		//		!= FRI_CTRL::FRI_CTRL_POSITION){
-		//	_fri_inst->setToKRLInt(1, 10);
-		//}else{
+		if(_fri_inst->getCurrentControlScheme()
+				!= FRI_CTRL::FRI_CTRL_POSITION){
+			_fri_inst->setToKRLInt(1, 10);
+		}else{
 	RTT::log(RTT::Info) << "jointPos!" << RTT::endlog();
 		//Currently done on index only, maybe convert to names as well?
 //		_fri_inst->doPositionControl(
 //				position_controller->joint_cmd.angles.data(), false);
 		std::vector<int> joint_scoped_names = getJointScopedNames();
 		for (unsigned int i = 0; i < joint_scoped_names.size(); ++i) {
-			_joint_pos(joint_scoped_names[i]) =position_controller->joint_cmd.angles(i); //fri_inst->getMsrMsrJntPosition()[i];//_fri_inst->getMsrCmdJntPosition()[i];// + _fri_inst->getMsrCmdJntPositionOffset()[i];
-
-
-					//position_controller->joint_cmd.angles(i);
-RTT::log(RTT::Info) << _joint_pos.data()[i]<<", "<<_fri_inst->getMsrMsrJntPosition()[i]<<": joint "<<i << RTT::endlog();
+			_joint_pos(joint_scoped_names[i]) =
+					position_controller->joint_cmd.angles(i);
+RTT::log(RTT::Info) << _joint_pos(joint_scoped_names[i])<<": joint "<<i << RTT::endlog();
 		}
-		//_joint_pos(1) = _joint_pos(1)+0.01;
-		if(_joint_pos(0)!=0){
 		_fri_inst->doPositionControl(_joint_pos.data(), false);
-}
-		//_fri_inst->doTest();
-		//}
+		}
 //		_gazebo_position_joint_controller->Update();
 	} else if (_current_control_mode == ControlModes::JointTorqueCtrl) {
-RTT::log(RTT::Info) << "jointtrq!" << RTT::endlog();
 if(_fri_inst->getCurrentControlScheme()
 				!= FRI_CTRL::FRI_CTRL_JNT_IMP){
 			_fri_inst->setToKRLInt(1, 30);
@@ -425,7 +393,6 @@ if(_fri_inst->getCurrentControlScheme()
 				_joint_damp.data(), _joint_trq.data(), false);
 }
 	}
-}
 	_fri_inst->doSendData();
 }
 

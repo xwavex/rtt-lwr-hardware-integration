@@ -147,8 +147,6 @@ bool lwr_robot::getModel(const std::string& model_name) {
 	return bool(model);
 }
 
-void lwr_robot::updateHook() {
-}
 
 bool lwr_robot::configureHook() {
 	//this->is_configured = gazeboConfigureHook(model);
@@ -188,7 +186,7 @@ bool lwr_robot::configureHook() {
 		RTT::log(RTT::Info) << "Kinematic Chains Initialized!" << RTT::endlog();
 
 		RTT::log(RTT::Warning) << "Done configuring component" << RTT::endlog();
-	return is_configured;
+	return true;
 }
 
 

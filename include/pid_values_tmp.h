@@ -20,8 +20,8 @@ public:
 		joints.push_back(std::pair<std::string,int>("lwr_arm_5_joint",5));
 		joints.push_back(std::pair<std::string,int>("lwr_arm_6_joint",6));
 		map_chains_joints.insert(
-				std::pair<std::string, std::pair<std::string,std::vector<std::pair<std::string,int>>>>("upper_arm",
-						std::pair<std::string,std::vector<std::pair<std::string,int>>>("192.168.1.51",joints)));
+				std::pair<std::string, std::pair<std::string,std::vector<std::pair<std::string,int>>>>("upper",
+						std::pair<std::string,std::vector<std::pair<std::string,int>>>("192.168.0.21",joints)));
 		joints.clear();
 
 	}
