@@ -2,22 +2,23 @@
 #include <pid_values_tmp.h>
 
 using namespace cogimon;
-//todo add fri commuincation
 KinematicChain::KinematicChain(const std::string& chain_name,
 		const std::vector<std::pair<std::string, int>> &joint_names,
-		RTT::DataFlowInterface& ports, //TODO FRI INST
+		RTT::DataFlowInterface& ports,
 		friRemote* friInst) :
 		_kinematic_chain_name(chain_name), _ports(ports), _current_control_mode(
 				std::string(ControlModes::JointPositionCtrl)), _joint_names(
 				joint_names) {
+	//move pointer for _fri_inst
 	this->_fri_inst = friInst;
 	char str[INET_ADDRSTRLEN];
 	inet_ntop(AF_INET, &(_fri_inst->remote.krcAddr.sin_addr), str,
 	INET_ADDRSTRLEN);
+	//store krc_ip address in case it's needed
 	this->_krc_ip = std::string(str);
 	RTT::log(RTT::Info) << "Creating Kinematic Chain " << chain_name
 			<< RTT::endlog();
-
+	//changed from string string pair to string int as FRI doesn't use joint names but rather indexed positions (could change back to string and convert to int again?)
 	for (unsigned int i = 0; i < _joint_names.size(); ++i)
 		_map_joint_name_index.insert(
 				std::pair<std::string, int>(_joint_names[i]));
@@ -55,17 +56,10 @@ bool KinematicChain::initKinematicChain() {
 		return false;
 
 	setFeedBack();
-	//TODO change to init krc conrtoller
+	//TODO change to init krc conrtoller (Possibly may not need anymore but needs adapting to new KRC.src program)
 	if (!initKRC()) {
 		return false;
 	}
-
-//	if (!initGazeboJointController()) {
-//		RTT::log(RTT::Error)
-//				<< "Joint Controller can NOT be initialized, exiting"
-//				<< RTT::endlog();
-//		return false;
-//	}
 	setInitialPosition();
 	setInitialImpedance();
 	return true;
@@ -130,8 +124,6 @@ bool KinematicChain::setController(const std::string& controller_type) {
 
 		position_controller->joint_cmd = JointAngles(_number_of_dofs);
 		position_controller->joint_cmd.angles.setZero();
-		//TODO change to krc
-		//_gazebo_position_joint_controller.reset(new gazebo::physics::JointController(_model));
 	} else if (controller_type == ControlModes::JointImpedanceCtrl) {
 		impedance_controller.reset(new impedance_ctrl);
 		impedance_controller->orocos_port.setName(
@@ -172,14 +164,6 @@ bool KinematicChain::setJointNamesAndIndices() {
 	std::map<std::string, int>::iterator it1;
 	for (it1 = _map_joint_name_index.begin();
 			it1 != _map_joint_name_index.end(); it1++) {
-		//gazebo::physics::JointPtr joint = _model->GetJoint(it1->first);
-//		if (!joint) {
-//			RTT::log(RTT::Error) << "No Joint" << it1->first
-//					<< " could be added, exiting" << RTT::endlog();
-//			return false;
-//		}
-		//_map_joint_name_scoped_name[it1->first] =
-		//	_model->GetJoint(it1->first)->GetScopedName();
 		_map_joint_name_index[it1->first] = it1->second;
 
 		RTT::log(RTT::Info) << "Joint " << it1->first << " in chain "
@@ -189,23 +173,7 @@ bool KinematicChain::setJointNamesAndIndices() {
 	return true;
 }
 
-//bool KinematicChain::initGazeboJointController() {
-//	for (unsigned int i = 0; i < _joint_names.size(); ++i)
-//		_gazebo_position_joint_controller->AddJoint(
-//				_model->GetJoint(_joint_names[i]));
-//
-//	hardcoded_pids PID;
-//	std::vector<std::string> joint_scoped_names = getJointScopedNames();
-//	for (unsigned int i = 0; i < joint_scoped_names.size(); ++i)
-//		_gazebo_position_joint_controller->SetPositionPID(joint_scoped_names[i],
-//				PID.pids[_joint_names[i]]);
-//
-//	return true;
-//}
-
 void KinematicChain::setInitialPosition() {
-	///TODO: check if user initial config is set when it is used in the gazebo configure hook
-
 	position_controller->orocos_port.clear();
 	for (unsigned int i = 0; i < _joint_names.size(); ++i)
 		position_controller->joint_cmd.angles[i] =
@@ -240,9 +208,18 @@ bool KinematicChain::setControlMode(const std::string &controlMode) {
 		return false;
 	}
 	RTT::log(RTT::Warning) << "CHAGING TO CONTROL" << RTT::endlog();
+//TODO add all control modes in properly with different options between them	
 	if(controlMode == ControlModes::JointPositionCtrl){
 		_fri_inst->getCmdBuf().cmd.cmdFlags=FRI_CMD_JNTPOS;
-	}
+		_fri_inst->setToKRLInt(14,10);
+	} else if (controlMode == ControlModes::JointTorqueCtrl){
+		_fri_inst->getCmdBuf().cmd.cmdFlags=0;
+		_fri_inst->getCmdBuf().cmd.cmdFlags|=FRI_CMD_JNTPOS;
+		_fri_inst->getCmdBuf().cmd.cmdFlags|=FRI_CMD_JNTSTIFF;
+		_fri_inst->getCmdBuf().cmd.cmdFlags|=FRI_CMD_JNTDAMP;
+		_fri_inst->getCmdBuf().cmd.cmdFlags|=FRI_CMD_JNTTRQ;
+		_fri_inst->setToKRLInt(14,30);
+	}	
 //	else if (controlMode == ControlModes::JointTorqueCtrl
 //			|| controlMode == ControlModes::JointImpedanceCtrl)
 //		_gazebo_position_joint_controller->Reset();
@@ -250,53 +227,18 @@ bool KinematicChain::setControlMode(const std::string &controlMode) {
 	_current_control_mode = controlMode;
 	return true;
 }
-/*
-if(last_quality!= FRI_QUALITY::FRI_QUALITY_PERFECT){
-	RTT::log(RTT::Info) << "recieve_data!" << RTT::endlog();
-	
-	_fri_inst->setToKRLInt(0, 1);
-
-		//if (last_quality >= FRI_QUALITY_OK ) {
-			
-		//	_fri_inst->setToKRLInt(1, 10);
-			//_fri_inst->doTest();
-			//_fri_inst->doDataExchange();
-		//}
-last_quality = _fri_inst->getQuality();
-RTT::log(RTT::Info) << "Trying to initialize :"<<_fri_inst->getQuality()
-			<< RTT::endlog();
-		_fri_inst->setToKRLReal(1, _fri_inst->getFrmKRLReal(1));
-_fri_inst->doSendData();
-		}
-	if(_fri_inst->getQuality()!= FRI_QUALITY::FRI_QUALITY_PERFECT){
-		return;
-	}
-*/
 
 void KinematicChain::sense() {
 	_fri_inst->doReceiveData();
-	RTT::log(RTT::Info) << _fri_inst->getFrmKRLInt(14)<<", "<<_fri_inst->getFrmKRLInt(15) << RTT::endlog();
 	_fri_inst->setToKRLInt(15,0);
-	if(_fri_inst->getFrmKRLInt(15) == 10){
-		RTT::log(RTT::Info) << "gogo!" << RTT::endlog();
-		_fri_inst->setToKRLInt(15,10);
-		_fri_inst->setToKRLInt(14,10);
-		_fri_inst->doTest();
-		_fri_inst->doDataExchange();
+	if(_fri_inst->getFrmKRLInt(15)<10){
 		return;
 	}
-	RTT::log(RTT::Info) << "gogo!" << RTT::endlog();
-	/*if(_fri_inst->getFrmKRLInt(15) == 10 && _fri_inst->getCurrentControlScheme()
-				== FRI_CTRL::FRI_CTRL_POSITION){
+	if(_fri_inst->getFrmKRLInt(15) == 10){
 		_fri_inst->setToKRLInt(15,10);
-		_fri_inst->doDataExchange();
-		return;
-}*/
-	if(_fri_inst->getFrmKRLInt(15)!=20){
 		return;
 	}
 	if (full_feedback) {
-RTT::log(RTT::Info) << "full!" << RTT::endlog();
 		time_now = RTT::os::TimeService::Instance()->getNSecs();
 		for (unsigned int i = 0; i < _number_of_dofs; ++i)
 			full_feedback->joint_feedback.angles(i) =
@@ -323,7 +265,6 @@ RTT::log(RTT::Info) << "full!" << RTT::endlog();
 }
 
 void KinematicChain::getCommand() {
-RTT::log(RTT::Info) << "commamd!" << RTT::endlog();
 	if (_current_control_mode == ControlModes::JointTorqueCtrl)
 		torque_controller->joint_cmd_fs =
 				torque_controller->orocos_port.readNewest(
@@ -363,30 +304,17 @@ RTT::log(RTT::Info) << "movce! "<<_current_control_mode << RTT::endlog();
 //				position_controller->joint_cmd.angles.data(), false);
 		std::vector<int> joint_scoped_names = getJointScopedNames();
 		for (unsigned int i = 0; i < joint_scoped_names.size(); ++i) {
-			_joint_pos(joint_scoped_names[i]) =position_controller->joint_cmd.angles(i); //fri_inst->getMsrMsrJntPosition()[i];//_fri_inst->getMsrCmdJntPosition()[i];// + _fri_inst->getMsrCmdJntPositionOffset()[i];
-
-
-					//position_controller->joint_cmd.angles(i);
-RTT::log(RTT::Info) << _joint_pos.data()[i]<<", "<<_fri_inst->getMsrMsrJntPosition()[i]<<": joint "<<i << RTT::endlog();
+			_joint_pos(joint_scoped_names[i]) =position_controller->joint_cmd.angles(i);
 		}
-		//_joint_pos(1) = _joint_pos(1)+0.01;
-		if(_joint_pos(0)!=0){
+		if(position_controller->joint_cmd_fs==RTT::NewData){
 		_fri_inst->doPositionControl(_joint_pos.data(), false);
-}
-		//_fri_inst->doTest();
-		//}
-//		_gazebo_position_joint_controller->Update();
+		}
 	} else if (_current_control_mode == ControlModes::JointTorqueCtrl) {
 RTT::log(RTT::Info) << "jointtrq!" << RTT::endlog();
-if(_fri_inst->getCurrentControlScheme()
-				!= FRI_CTRL::FRI_CTRL_JNT_IMP){
-			_fri_inst->setToKRLInt(1, 30);
-		}else{
-
-//		for (unsigned int i = 0; i < _joint_names.size(); ++i)
-//			_model->GetJoint(_joint_names[i])->SetForce(0,
-//					torque_controller->joint_cmd.torques(i));
-
+		//if(_fri_inst->getCurrentControlScheme()
+		//		!= FRI_CTRL::FRI_CTRL_JNT_IMP){
+		//	_fri_inst->setToKRLInt(1, 30);
+		//}else{
 		std::vector<int> joint_scoped_names = getJointScopedNames();
 		for (unsigned int i = 0; i < joint_scoped_names.size(); ++i) {
 			_joint_trq(joint_scoped_names[i]) =
@@ -394,22 +322,12 @@ if(_fri_inst->getCurrentControlScheme()
 		}
 		_fri_inst->doJntImpedanceControl(_fri_inst->getMsrMsrJntPosition(),
 				zero_vector, zero_vector, _joint_trq.data(), false);
-}
+//}
 	} else if (_current_control_mode == ControlModes::JointImpedanceCtrl) {
 if(_fri_inst->getCurrentControlScheme()
 				!= FRI_CTRL::FRI_CTRL_JNT_IMP){
 			_fri_inst->setToKRLInt(1, 30);
 		}else{
-//	for (unsigned int i = 0; i < _joint_names.size(); ++i) {
-//		double q = full_feedback->joint_feedback.angles[i];
-//		double qd = position_controller->joint_cmd.angles[i];
-//		double Kd = impedance_controller->joint_cmd.stiffness[i];
-//		double qdot = full_feedback->joint_feedback.velocities[i];
-//		double Dd = impedance_controller->joint_cmd.damping[i];
-//		double tauoff = torque_controller->joint_cmd.torques[i];
-//		double tau = -Kd * (q - qd) - Dd * qdot + tauoff;
-//		_model->GetJoint(_joint_names[i])->SetForce(0, tau);
-//	}
 		std::vector<int> joint_scoped_names = getJointScopedNames();
 		for (unsigned int i = 0; i < joint_scoped_names.size(); ++i) {
 			_joint_pos(joint_scoped_names[i]) =
@@ -424,6 +342,10 @@ if(_fri_inst->getCurrentControlScheme()
 		_fri_inst->doJntImpedanceControl(_joint_pos.data(), _joint_stiff.data(),
 				_joint_damp.data(), _joint_trq.data(), false);
 }
+	}
+}else{
+	for(int i = 0; i < LBR_MNJ;i++){
+	_fri_inst->getCmdBuf().cmd.jntPos[i] = _fri_inst->getMsrBuf().data.cmdJntPos[i] + _fri_inst->getMsrBuf().data.cmdJntPosFriOffset[i];
 	}
 }
 	_fri_inst->doSendData();
