@@ -1,10 +1,12 @@
 # rtt-lwr-hardware-integration
-RTT Component integrating the FRI library, with RTNET providing real-time communication, into the orocos framework
+RTT Component integrating the FRI library, with RTNET providing real-time communication, into the orocos framework.
+Specifically designed using kinematic chains for use with [rtt-core-extensions](https://github.com/corlab/rtt-core-extensions).
 
 ## Features
-- POSITION CONTROL MODE (Not implemented yet)
+- POSITION CONTROL MODE
 - TORQUE CONTROL MODE
   - Through joint impedance control mode, gravity is compensated through the KRC unit!
+- JOINT IMPEDANCE CONTROL MODE
 
 ## Install
 
@@ -25,7 +27,6 @@ RTT Component integrating the FRI library, with RTNET providing real-time commun
 `export RTT_COMPONENT_PATH=$RTT_COMPONENT_PATH:$include-path-to/rtt-lwr-hardware-integration/build/orocos`
 
 ## TODO
-
-- check FRI interface to make sure communication is done through OROCOS interfaces rather than straight to xenomai
-
-- test on Kuka arms to make sure various interfaces work and communication works as well
+- Adapt KRL src file for KRC to work with the components better (Also put KRL src file on here)
+- Stop and cleanup component better with proper stopping of the KRC
+- Write instructions on how to use
