@@ -7,7 +7,9 @@ Specifically designed using kinematic chains for use with [rtt-core-extensions](
 - TORQUE CONTROL MODE
   - Through joint impedance control mode, gravity is compensated through the KRC unit!
 - JOINT IMPEDANCE CONTROL MODE
+ 
 ## Requirements
+
 Realtime:
 -Ubuntu with Xenomai patched kernel and RTNet
 --(Tested on Ubuntu 14.04 with Xenomai 2.6.4 and RTNet)
