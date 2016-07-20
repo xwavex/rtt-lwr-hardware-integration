@@ -41,7 +41,7 @@
 
 #include "friudp_rt.h"
 
-friUdp::friUdp(int port, const char * remoteHost) :
+friUdp::friUdp(int port, const char * remoteHost, const char * serverHost) :
 		serverPort(port) {
 	/* check struct sizes */
 	if (!FRI_CHECK_SIZES_OK) {
@@ -59,7 +59,7 @@ friUdp::friUdp(int port, const char * remoteHost) :
 	StartWinsock();
 #endif
 
-	Init(remoteHost);
+	Init(remoteHost, serverHost);
 
 }
 
@@ -76,7 +76,7 @@ int friUdp::StartWinsock(void)
 }
 #endif// WIN32
 
-void friUdp::Init(const char * remoteHost) {
+void friUdp::Init(const char * remoteHost, const char * serverHost) {
 	struct sockaddr_in servAddr;
 	m_timestamp = 0;
 	memset(&servAddr, 0, sizeof(servAddr));
@@ -131,8 +131,8 @@ void friUdp::Init(const char * remoteHost) {
 		struct sockaddr_in adr_client;
 		inet_aton(remoteHost, &adr_client.sin_addr);
 		// server address should always have address 100 in the local network
-		//TODO make address have external variable!
-		inet_aton("192.168.0.51", &adr_server.sin_addr);
+		//TODO make address have external variable!"192.168.0.51"
+		inet_aton(serverHost, &adr_server.sin_addr);
 		server = inet_lnaof(adr_server.sin_addr);
 		// but we want to use the same local network of the remote host
 		// see routing table for rteth0 and rteht1

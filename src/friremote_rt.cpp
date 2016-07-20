@@ -48,8 +48,8 @@
 
 std::ostringstream stream;
 
-friRemote::friRemote(int port, const char *hintToRemoteHost, RTOS_TASK* task) 
-  : remote(port,hintToRemoteHost)
+friRemote::friRemote(int port, const char *hintToRemoteHost,const char * serverHost, RTOS_TASK* task) 
+  : remote(port,hintToRemoteHost,serverHost)
   , seqCount(0)
   , inCount(0)
   , outCount(0)

@@ -38,6 +38,9 @@ lwr_robot::lwr_robot(const std::string &name) :
 	this->provides("joint_info")->addOperation("getJointMappingForPort",
 			&lwr_robot::getJointMappingForPort, this, RTT::ClientThread);
 
+	this->ip_addr = "192.168.0.51";
+	addProperty("ip_addr", ip_addr).doc("IP address of the computer");
+
 //    world_begin = gazebo::event::Events::ConnectWorldUpdateBegin(
 //            boost::bind(&lwrSim::WorldUpdateBegin, this));
 //    world_end = gazebo::event::Events::ConnectWorldUpdateEnd(
@@ -172,7 +175,7 @@ bool lwr_robot::configureHook() {
 						it->first,
 						boost::shared_ptr<KinematicChain>(//TODO FRI INST
 								new KinematicChain(it->first, it->second.second,
-										*(this->ports()), new friRemote(49939, it->second.first.c_str(), this->getActivity()->thread()->getTask())))));
+										*(this->ports()), new friRemote(49939, it->second.first.c_str(),ip_addr.c_str(), this->getActivity()->thread()->getTask())))));
 	}
 	RTT::log(RTT::Info) << "Kinematic Chains map created!" << RTT::endlog();
 	for (std::map<std::string, boost::shared_ptr<KinematicChain>>::iterator it =

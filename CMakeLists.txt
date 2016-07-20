@@ -46,13 +46,15 @@ if(${OROCOS_TARGET} STREQUAL "xenomai" )
   find_package(Xenomai REQUIRED)
   message(STATUS ${Xenomai_LIBRARY_DIRS})
   set_property(DIRECTORY ${PROJECT_SOURCE_DIR} APPEND PROPERTY COMPILE_DEFINITIONS XENOMAI)
-endif()
 message(STATUS "checking for RTNET")
 find_package(RTnet)
 if(${RTNET_FOUND})
   set_property(DIRECTORY ${PROJECT_SOURCE_DIR} APPEND PROPERTY COMPILE_DEFINITIONS HAVE_RTNET)
   set(RTLIB_LIBRARIES rtdm)
+include_directories(${RTNET_INCLUDE_DIR})
 endif()
+endif()
+
 
 find_package(RST-RT REQUIRED)
 message(STATUS "RST-RT version: ${RST-RT_VERSION}")
@@ -104,7 +106,6 @@ include_directories(include
   ${orocos_kdl_INCLUDE_DIRS}
   ${USE_OROCOS_INCLUDE_DIRS}
   ${Eigen_INCLUDE_DIR}
-  ${RTNET_INCLUDE_DIR}
   ${RST-RT_INCLUDE_DIRS}
   ${TINYXML_INCLUDE_DIRS}
 ${urdfdom_INCLUDE_DIRS}

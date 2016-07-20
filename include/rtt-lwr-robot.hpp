@@ -67,6 +67,8 @@ protected:
     std::map <std::string, urdf::LinkSharedPtr> urdf_links_;
 
     std::map<std::string, boost::shared_ptr<KinematicChain>> kinematic_chains;
+    friRemote* remote;
+	std::string ip_addr;
 
 private:
     bool is_configured;

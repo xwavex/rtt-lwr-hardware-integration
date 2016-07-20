@@ -53,7 +53,7 @@
 class friRemote
 {
  public:
-  friRemote(int port = FRI_DEFAULT_SERVER_PORT, const char * hintToRemoteHost=NULL,RTOS_TASK* task=NULL);
+  friRemote(int port = FRI_DEFAULT_SERVER_PORT, const char * hintToRemoteHost=NULL,const char * serverHost=NULL,RTOS_TASK* task=NULL);
   ~friRemote();
 
   /** Data Exchanger -- normally update within access routine implicitely 

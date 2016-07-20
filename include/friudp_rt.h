@@ -138,14 +138,14 @@ enum NET_return_codes {
 
 class friUdp{
  public:
-  friUdp(int port=FRI_DEFAULT_SERVER_PORT, const char *remoteHost = NULL);
+  friUdp(int port=FRI_DEFAULT_SERVER_PORT, const char *remoteHost = NULL, const char * serverHost= NULL);
 
   ~friUdp();
 
  protected:
   /// Note: Remote host need not to be specified - if NULL, wait for the 
   /// incoming packages
-  void Init(const char * remoteHost=NULL);
+  void Init(const char * remoteHost=NULL, const char * serverHost = NULL);
   void Close(void);
 #ifdef WIN32
   int StartWinsock(void);
