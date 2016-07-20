@@ -9,12 +9,11 @@ Specifically designed using kinematic chains for use with [rtt-core-extensions](
 - JOINT IMPEDANCE CONTROL MODE
  
 ## Requirements
-
 Realtime:
--Ubuntu with Xenomai patched kernel and RTNet
---(Tested on Ubuntu 14.04 with Xenomai 2.6.4 and RTNet)
+- Ubuntu with Xenomai patched kernel and RTNet
+  - (Tested on Ubuntu 14.04 with Xenomai 2.6.4 and RTNet)
 Non-realtime:
--Ubuntu only
+- Ubuntu only
 
 ## Install
 KRC Unit:
