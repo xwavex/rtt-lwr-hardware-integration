@@ -38,13 +38,9 @@ lwr_robot::lwr_robot(const std::string &name) :
 	this->provides("joint_info")->addOperation("getJointMappingForPort",
 			&lwr_robot::getJointMappingForPort, this, RTT::ClientThread);
 
+	//assign ip address of this computer
 	this->ip_addr = "192.168.0.51";
 	addProperty("ip_addr", ip_addr).doc("IP address of the computer");
-
-//    world_begin = gazebo::event::Events::ConnectWorldUpdateBegin(
-//            boost::bind(&lwrSim::WorldUpdateBegin, this));
-//    world_end = gazebo::event::Events::ConnectWorldUpdateEnd(
-//            boost::bind(&lwrSim::WorldUpdateEnd, this));
 }
 
 std::map<std::string, int> lwr_robot::getJointMappingForPort(
@@ -146,15 +142,14 @@ bool lwr_robot::getModel(const std::string& model_name) {
 				<< endlog();
 		return true;
 	}
+	//parse URDF rather than getting model from gazebo
 	model = urdf::parseURDFFile(model_name);
 	return bool(model);
 }
 
 
 bool lwr_robot::configureHook() {
-	//this->is_configured = gazeboConfigureHook(model);
-
-	//JOSH STUFF
+	//might not need the model stuff for this component or maybe have it in this component and provide to everything else?
 	if (!bool(model)) {
 		return false;
 	}
@@ -168,6 +163,7 @@ bool lwr_robot::configureHook() {
 
 	hardcoded_chains chains;
 	std::map<std::string, std::pair<std::string,std::vector<std::pair<std::string,int>>>>::iterator it;
+	//add the kinematic chain with fri remote interface depedant on hardcoded chains at the moment
 	for (it = chains.map_chains_joints.begin();
 			it != chains.map_chains_joints.end(); it++) {
 		kinematic_chains.insert(

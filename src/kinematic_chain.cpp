@@ -35,8 +35,10 @@ std::vector<RTT::base::PortInterface*> KinematicChain::getAssociatedPorts() {
 bool KinematicChain::initKinematicChain() {
 	setJointNamesAndIndices();
 	_number_of_dofs = _map_joint_name_index.size();
+	//set last position memory for torque mode
 	_last_pos = new float[_number_of_dofs];
 	memset(_last_pos, 0, _number_of_dofs * sizeof(*_last_pos));
+	//set zero vector for torque mode 0 vectors
 	zero_vector = new float[_number_of_dofs];
 	memset(zero_vector, 0, _number_of_dofs * sizeof(*zero_vector));
 	_joint_pos.resize(_number_of_dofs);
@@ -65,6 +67,7 @@ bool KinematicChain::initKinematicChain() {
 	return true;
 }
 
+//scoped names actually become ints for fri
 std::vector<int> KinematicChain::getJointScopedNames() {
 	std::vector<int> joint_names;
 	for (unsigned int i = 0; i < _joint_names.size(); ++i)
@@ -175,6 +178,7 @@ bool KinematicChain::setJointNamesAndIndices() {
 
 void KinematicChain::setInitialPosition() {
 	position_controller->orocos_port.clear();
+	//get initial positoin from fri, currently using loop possibly convert to Eigen::map or something?
 	for (unsigned int i = 0; i < _joint_names.size(); ++i)
 		position_controller->joint_cmd.angles[i] =
 				_fri_inst->getMsrMsrJntPosition()[i];
@@ -207,8 +211,8 @@ bool KinematicChain::setControlMode(const std::string &controlMode) {
 				<< " is not available!" << RTT::endlog();
 		return false;
 	}
-	RTT::log(RTT::Warning) << "CHAGING TO CONTROL" << RTT::endlog();
-//TODO add all control modes in properly with different options between them	
+	//TODO add all control modes in properly with different options between them
+	//set control modes and the correct cmdFlags as well (must be done in monitor mode not command mode! and can't be changed in command mode)	
 	if(controlMode == ControlModes::JointPositionCtrl){
 		_fri_inst->getCmdBuf().cmd.cmdFlags=FRI_CMD_JNTPOS;
 		_fri_inst->setToKRLInt(14,10);
@@ -229,17 +233,22 @@ bool KinematicChain::setControlMode(const std::string &controlMode) {
 }
 
 void KinematicChain::sense() {
+	//recieve data from fri
 	_fri_inst->doReceiveData();
+	//set mode command to zero so fri does not continue if it is being executed again (possibly move to component stop method)
 	_fri_inst->setToKRLInt(15,0);
+	//if not in monitor mode straight return as nothing can be sensed
 	if(_fri_inst->getFrmKRLInt(15)<10){
 		return;
 	}
+	//if in monitor mode command fri to switch to command mode with the correct control mode
 	if(_fri_inst->getFrmKRLInt(15) == 10){
 		_fri_inst->setToKRLInt(15,10);
-		return;
+		//return;
 	}
 	if (full_feedback) {
 		time_now = RTT::os::TimeService::Instance()->getNSecs();
+		//get the current pos
 		for (unsigned int i = 0; i < _number_of_dofs; ++i)
 			full_feedback->joint_feedback.angles(i) =
 					_fri_inst->getMsrMsrJntPosition()[i];
@@ -252,7 +261,7 @@ void KinematicChain::sense() {
 							/ (time_now - last_time);
 			_last_pos[i] = _fri_inst->getMsrMsrJntPosition()[i];
 		}
-
+		//get the current torques
 		for (unsigned int i = 0; i < _number_of_dofs; ++i) {
 			full_feedback->joint_feedback.torques(i) =
 					_fri_inst->getMsrJntTrq()[i];
@@ -291,14 +300,13 @@ void KinematicChain::move() {
 		
 		return;
 	}*/
+//only run when KRC is in command mode (don't need to check for perfect communication as the program will only go into command mode when communication is perfect)
 if(_fri_inst->getFrmKRLInt(15)==20){
-RTT::log(RTT::Info) << "movce! "<<_current_control_mode << RTT::endlog();
 	if (_current_control_mode == ControlModes::JointPositionCtrl) {
 		//if(_fri_inst->getCurrentControlScheme()
 		//		!= FRI_CTRL::FRI_CTRL_POSITION){
 		//	_fri_inst->setToKRLInt(1, 10);
 		//}else{
-	RTT::log(RTT::Info) << "jointPos!" << RTT::endlog();
 		//Currently done on index only, maybe convert to names as well?
 //		_fri_inst->doPositionControl(
 //				position_controller->joint_cmd.angles.data(), false);
@@ -310,7 +318,6 @@ RTT::log(RTT::Info) << "movce! "<<_current_control_mode << RTT::endlog();
 		_fri_inst->doPositionControl(_joint_pos.data(), false);
 		}
 	} else if (_current_control_mode == ControlModes::JointTorqueCtrl) {
-RTT::log(RTT::Info) << "jointtrq!" << RTT::endlog();
 		//if(_fri_inst->getCurrentControlScheme()
 		//		!= FRI_CTRL::FRI_CTRL_JNT_IMP){
 		//	_fri_inst->setToKRLInt(1, 30);
@@ -324,10 +331,10 @@ RTT::log(RTT::Info) << "jointtrq!" << RTT::endlog();
 				zero_vector, zero_vector, _joint_trq.data(), false);
 //}
 	} else if (_current_control_mode == ControlModes::JointImpedanceCtrl) {
-if(_fri_inst->getCurrentControlScheme()
-				!= FRI_CTRL::FRI_CTRL_JNT_IMP){
-			_fri_inst->setToKRLInt(1, 30);
-		}else{
+//if(_fri_inst->getCurrentControlScheme()
+	//			!= FRI_CTRL::FRI_CTRL_JNT_IMP){
+		//	_fri_inst->setToKRLInt(1, 30);
+	//	}else{
 		std::vector<int> joint_scoped_names = getJointScopedNames();
 		for (unsigned int i = 0; i < joint_scoped_names.size(); ++i) {
 			_joint_pos(joint_scoped_names[i]) =
@@ -341,13 +348,16 @@ if(_fri_inst->getCurrentControlScheme()
 		}
 		_fri_inst->doJntImpedanceControl(_joint_pos.data(), _joint_stiff.data(),
 				_joint_damp.data(), _joint_trq.data(), false);
-}
+//}
 	}
 }else{
+	//if not in command mode run keep the jntPosition updated, required by FRI
 	for(int i = 0; i < LBR_MNJ;i++){
 	_fri_inst->getCmdBuf().cmd.jntPos[i] = _fri_inst->getMsrBuf().data.cmdJntPos[i] + _fri_inst->getMsrBuf().data.cmdJntPosFriOffset[i];
 	}
-}
+}	
+
+	//Send data
 	_fri_inst->doSendData();
 }
 
