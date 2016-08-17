@@ -25,6 +25,10 @@
 #include <boost/shared_ptr.hpp>
 #include <urdf_parser/urdf_parser.h>
 
+#include <srdfdom_advr/model.h>
+#include <urdf/model.h>
+#include <XBotCoreModel.h>
+
 namespace cogimon {
 
 class lwr_robot: public RTT::TaskContext {
@@ -38,14 +42,16 @@ public:
 
 protected:
     bool getModel(const std::string& model_name);
-//    void gazeboUpdateHook(gazebo::physics::ModelPtr model);
-//    bool gazeboConfigureHook(gazebo::physics::ModelPtr model);
     bool setControlMode(const std::string& kinematic_chain, const std::string& controlMode);
     std::vector<std::string> getKinematicChains();
     std::string getControlMode(const std::string& kinematic_chain);
     std::vector<std::string> getControlAvailableMode(const std::string& kinematic_chain);
     std::string printKinematicChainInformation(const std::string& kinematic_chain);
     urdf::ModelInterfaceSharedPtr model;
+    
+    bool loadURDFAndSRDF(const std::string& URDF_path, const std::string& SRDF_path);
+    std::map<std::string, std::vector<std::string> > getKinematiChainsAndJoints();
+    bool resetModelConfiguration();
 
 
     /**
@@ -53,13 +59,8 @@ protected:
      * If there isn't such an port (portName) existing, or used in an kinematic chain,
      * the call will return an empty map. Otherwise it will contain the mapping.
      */
-    std::map<std::string, int> getJointMappingForPort(std::string portName);
+    //std::map<std::string, int> getJointMappingForPort(std::string portName);
 
-//    gazebo::physics::ModelPtr model;
-//    gazebo::event::ConnectionPtr world_begin;
-//    gazebo::event::ConnectionPtr world_end;
-
-//    RTT::SendHandle<gazebo::physics::ModelPtr(const std::string&, double)> get_model_handle;
 
 //    gazebo::physics::Joint_V gazebo_joints_;
     std::map <std::string, urdf::JointSharedPtr> urdf_joints_;
@@ -69,6 +70,9 @@ protected:
     std::map<std::string, boost::shared_ptr<KinematicChain>> kinematic_chains;
     friRemote* remote;
 	std::string ip_addr;
+
+    bool _models_loaded;
+    XBot::XBotCoreModel _xbotcore_model;
 
 private:
     bool is_configured;

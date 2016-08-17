@@ -27,7 +27,7 @@ typedef cogimon::jointFeedback<JointState> full_fbk;
 
 class KinematicChain {
 public:
-    KinematicChain(const std::string& chain_name, const std::vector<std::pair<std::string,int>> &joint_names,
+    KinematicChain(const std::string& chain_name, const std::vector<std::string> &joint_names,
                    RTT::DataFlowInterface& , friRemote* friInst);
     ~KinematicChain(){}
 
@@ -37,6 +37,7 @@ public:
     std::vector<std::string> getJointNames();
     std::vector<std::string> getControllersAvailable();
     bool initKinematicChain();
+    bool resetKinematicChain();
     bool setControlMode(const std::string& controlMode);
     void sense();
     void getCommand();
@@ -68,9 +69,11 @@ private:
     std::string _krc_ip;
     std::string _current_control_mode;
     //gazebo::physics::JointControllerPtr _gazebo_position_joint_controller;
-    std::vector<std::pair<std::string,int>> _joint_names;
+    std::vector<std::string> _joint_names;
     std::map<std::string, int> _map_joint_name_index;
     Eigen::VectorXf _joint_pos, _joint_trq, _joint_stiff,_joint_damp;
+
+	std::vector<double> _initial_joints_configuration;
 
     bool setController(const std::string& controller_type);
     void setFeedBack();
@@ -78,7 +81,7 @@ private:
     //bool initGazeboJointController();
     bool initKRC();
     std::vector<int> getJointScopedNames();
-    void setInitialPosition();
+    void setInitialPosition(const bool use_model);
     void setInitialImpedance();
 
 };

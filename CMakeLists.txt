@@ -28,6 +28,8 @@ include(${OROCOS-RTT_USE_FILE_PATH}/UseOROCOS-RTT.cmake )
 set ( CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/Modules/  )
 find_package(Eigen REQUIRED)
 find_package(Boost COMPONENTS thread REQUIRED)
+find_package(srdfdom_advr REQUIRED)
+find_package(XBotCoreModel REQUIRED)
 
 find_package(RCI REQUIRED)
 message(STATUS "RCI version: ${RCI_VERSION}")	
@@ -40,6 +42,7 @@ message(STATUS "RSC version: ${RSC_VERSION}")
 include_directories(BEFORE SYSTEM ${RSC_INCLUDE_DIRS})	
 add_definitions(${RSC_CFLAGS})
 link_directories(${RSC_LIBRARY_DIR})
+
 
 if(${OROCOS_TARGET} STREQUAL "xenomai" )
   message(STATUS "checking for xenomai")
@@ -109,6 +112,8 @@ include_directories(include
   ${RST-RT_INCLUDE_DIRS}
   ${TINYXML_INCLUDE_DIRS}
 ${urdfdom_INCLUDE_DIRS}
+    ${srdfdom_advr_INCLUDE_DIRS}
+    ${XBotCoreModel_INCLUDE_DIRS}
   )
  
  ADD_LIBRARY(FRI_RT
@@ -143,6 +148,8 @@ target_link_libraries(lwr_fri
    ${RST-RT_LIBRARIES}
     ${TINYXML_LIBRARIES}
     ${urdfdom_LIBRARIES}
+   ${srdfdom_advr_LIBRARIES}
+   ${XBotCoreModel_LIBRARIES}
    )
 
 orocos_generate_package(INCLUDE_DIRS include)

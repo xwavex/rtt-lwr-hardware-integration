@@ -3,7 +3,7 @@
 
 using namespace cogimon;
 KinematicChain::KinematicChain(const std::string& chain_name,
-		const std::vector<std::pair<std::string, int>> &joint_names,
+		const std::vector<std::string> &joint_names,
 		RTT::DataFlowInterface& ports,
 		friRemote* friInst) :
 		_kinematic_chain_name(chain_name), _ports(ports), _current_control_mode(
@@ -21,11 +21,15 @@ KinematicChain::KinematicChain(const std::string& chain_name,
 	//changed from string string pair to string int as FRI doesn't use joint names but rather indexed positions (could change back to string and convert to int again?)
 	for (unsigned int i = 0; i < _joint_names.size(); ++i)
 		_map_joint_name_index.insert(
-				std::pair<std::string, int>(_joint_names[i]));
+				std::pair<std::string, int>(_joint_names[i],i));
 
 	RTT::log(RTT::Info) << "Joints: " << RTT::endlog();
 	for (unsigned int i = 0; i < _joint_names.size(); ++i)
-		RTT::log(RTT::Info) << "    " << _joint_names[i].first << RTT::endlog();
+		RTT::log(RTT::Info) << "    " << _joint_names[i] << RTT::endlog();
+
+    _initial_joints_configuration.reserve(joint_names.size());
+    for(unsigned int i = 0; i < _initial_joints_configuration.size(); ++i)
+        _initial_joints_configuration.push_back(0.0);
 }
 
 std::vector<RTT::base::PortInterface*> KinematicChain::getAssociatedPorts() {
@@ -62,23 +66,31 @@ bool KinematicChain::initKinematicChain() {
 	if (!initKRC()) {
 		return false;
 	}
-	setInitialPosition();
+	setInitialPosition(false);
 	setInitialImpedance();
 	return true;
+}
+
+bool KinematicChain::resetKinematicChain()
+{
+    setControlMode(ControlModes::JointPositionCtrl);
+    setInitialPosition(false);
+    setInitialImpedance();
+    return true;
 }
 
 //scoped names actually become ints for fri
 std::vector<int> KinematicChain::getJointScopedNames() {
 	std::vector<int> joint_names;
 	for (unsigned int i = 0; i < _joint_names.size(); ++i)
-		joint_names.push_back(_joint_names[i].second);
+		joint_names.push_back(_map_joint_name_index.at(_joint_names[i]));
 	return joint_names;
 }
 
 std::vector<std::string> KinematicChain::getJointNames() {
 	std::vector<std::string> joint_names;
 	for (unsigned int i = 0; i < _joint_names.size(); ++i)
-		joint_names.push_back(_joint_names[i].first);
+		joint_names.push_back(_joint_names[i]);
 	return joint_names;
 }
 
@@ -176,12 +188,18 @@ bool KinematicChain::setJointNamesAndIndices() {
 	return true;
 }
 
-void KinematicChain::setInitialPosition() {
+void KinematicChain::setInitialPosition(const bool use_actual_model_pose) {
 	position_controller->orocos_port.clear();
 	//get initial positoin from fri, currently using loop possibly convert to Eigen::map or something?
+	if(use_actual_model_pose){
 	for (unsigned int i = 0; i < _joint_names.size(); ++i)
 		position_controller->joint_cmd.angles[i] =
 				_fri_inst->getMsrMsrJntPosition()[i];
+	}else{
+	    for (unsigned int i = 0; i < _joint_names.size(); ++i)
+		position_controller->joint_cmd.angles[i] =
+				_initial_joints_configuration.at(i);
+    }
 	position_controller->joint_cmd_fs = RTT::FlowStatus::NewData;
 }
 
@@ -189,9 +207,9 @@ void KinematicChain::setInitialImpedance() {
 	hardcoded_impedance impedance_init;
 	for (unsigned int i = 0; i < _joint_names.size(); ++i) {
 		impedance_controller->joint_cmd.stiffness[i] =
-				impedance_init.impedance[_joint_names[i].first].first;
+				impedance_init.impedance[_joint_names[i]].first;
 		impedance_controller->joint_cmd.damping[i] =
-				impedance_init.impedance[_joint_names[i].first].second;
+				impedance_init.impedance[_joint_names[i]].second;
 	}
 	impedance_controller->joint_cmd_fs = RTT::FlowStatus::NewData;
 }
@@ -364,7 +382,7 @@ if(_fri_inst->getFrmKRLInt(15)==20){
 std::string KinematicChain::printKinematicChainInformation() {
 	std::stringstream joint_names_stream;
 	for (unsigned int i = 0; i < _joint_names.size(); ++i)
-		joint_names_stream << _joint_names[i].first << " ";
+		joint_names_stream << _joint_names[i] << " ";
 
 	std::vector<std::string> controller_names = getControllersAvailable();
 	std::stringstream controller_names_stream;
