@@ -4,23 +4,13 @@ project(rtt-lwr-hardware-integration)
 set(CMAKE_BUILD_TYPE Release)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -g -Wall -O3 -fPIC -DHAVE_SOCKLEN_T")
 #list(APPEND CMAKE_CXX_FLAGS "-std=c++11")
-## Find catkin macros and libraries
-#find_package(catkin REQUIRED COMPONENTS 
-#    rtt_ros 
-#    cmake_modules 
-#    sensor_msgs 
-#    message_generation 
-#    std_msgs
-#)
-#
-#catkin_package()
+
+
 
 find_package(OROCOS-RTT REQUIRED COMPONENTS rtt-scripting rtt-transport-corba rtt-typekit)
 if (NOT OROCOS-RTT_FOUND)
   message (FATAL_ERROR "\nCould not find Orocos-RTT. Please use the shell command\n 'source orocos_toolchain/env.sh' and then run cmake again.")
 endif()
-
-#find_package(OROCOS-OCL REQUIRED COMPONENTS ocl-deployment ocl-taskbrowser ocl-logging)
 
 include(${OROCOS-RTT_USE_FILE_PATH}/UseOROCOS-RTT.cmake )
 
@@ -28,6 +18,7 @@ include(${OROCOS-RTT_USE_FILE_PATH}/UseOROCOS-RTT.cmake )
 set ( CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/Modules/  )
 find_package(Eigen REQUIRED)
 find_package(Boost COMPONENTS thread REQUIRED)
+find_package(urdfdom_headers 0.4.2 REQUIRED)
 find_package(srdfdom_advr REQUIRED)
 find_package(XBotCoreModel REQUIRED)
 
@@ -85,7 +76,7 @@ message(STATUS "TINYXML_LIBRARY: ${TINYXML_LIBRARY}")
 find_package(urdfdom REQUIRED)
 include_directories(BEFORE SYSTEM ${urdfdom_INCLUDE_DIRS})
 link_directories(BEFORE SYSTEM ${urdfdom_LIBRARY_DIR})
-message(STATUS ${URDFDOM_INCLUDE_DIRS})
+message(STATUS ${urdfdom_INCLUDE_DIRS})
 message(STATUS "dom_ ${urdfdom_INCLUDE_DIRS}")
 
 find_package(orocos_kdl REQUIRED)
@@ -112,6 +103,7 @@ include_directories(include
   ${RST-RT_INCLUDE_DIRS}
   ${TINYXML_INCLUDE_DIRS}
 ${urdfdom_INCLUDE_DIRS}
+${urdfdom_headers_INCLUDE_DIRS}
     ${srdfdom_advr_INCLUDE_DIRS}
     ${XBotCoreModel_INCLUDE_DIRS}
   )
@@ -121,17 +113,7 @@ ${urdfdom_INCLUDE_DIRS}
   src/friudp_rt.cpp  
 )
 
-orocos_use_package( ocl-taskbrowser )
-orocos_use_package( ocl-deployment )
-orocos_use_package( ocl-logging )
-orocos_use_package( orocos-rtt-corba )
-#orocos_use_package( rtt-typekit )
-
-#add_definitions(${OROCOS-RTT_DEFINITIONS})
-
-## Default component
-  
-orocos_component(lwr_fri src/friudp_rt.cpp src/friremote_rt.cpp src/parsertools/KDLParser.hpp src/parsertools/KDLParser.cpp src/rtt-lwr-robot.cpp src/rtt-lwr-robot_hooks.cpp src/kinematic_chain.cpp)
+orocos_component(lwr_fri src/friudp_rt.cpp src/friremote_rt.cpp src/rtt-lwr-robot.cpp src/rtt-lwr-robot_hooks.cpp src/kinematic_chain.cpp)
 set_target_properties(lwr_fri PROPERTIES COMPILE_DEFINITIONS RTT_COMPONENT)
 target_link_libraries(lwr_fri 
   ${orocos_kdl_LIBRARIES} 
@@ -148,6 +130,7 @@ target_link_libraries(lwr_fri
    ${RST-RT_LIBRARIES}
     ${TINYXML_LIBRARIES}
     ${urdfdom_LIBRARIES}
+   ${urdfdom_headers_LIBRARIES}
    ${srdfdom_advr_LIBRARIES}
    ${XBotCoreModel_LIBRARIES}
    )

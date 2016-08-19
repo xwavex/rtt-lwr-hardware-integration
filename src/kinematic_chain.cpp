@@ -4,8 +4,7 @@
 using namespace cogimon;
 KinematicChain::KinematicChain(const std::string& chain_name,
 		const std::vector<std::string> &joint_names,
-		RTT::DataFlowInterface& ports,
-		friRemote* friInst) :
+		RTT::DataFlowInterface& ports, friRemote* friInst) :
 		_kinematic_chain_name(chain_name), _ports(ports), _current_control_mode(
 				std::string(ControlModes::JointPositionCtrl)), _joint_names(
 				joint_names) {
@@ -21,15 +20,15 @@ KinematicChain::KinematicChain(const std::string& chain_name,
 	//changed from string string pair to string int as FRI doesn't use joint names but rather indexed positions (could change back to string and convert to int again?)
 	for (unsigned int i = 0; i < _joint_names.size(); ++i)
 		_map_joint_name_index.insert(
-				std::pair<std::string, int>(_joint_names[i],i));
+				std::pair<std::string, int>(_joint_names[i], i));
 
 	RTT::log(RTT::Info) << "Joints: " << RTT::endlog();
 	for (unsigned int i = 0; i < _joint_names.size(); ++i)
 		RTT::log(RTT::Info) << "    " << _joint_names[i] << RTT::endlog();
 
-    _initial_joints_configuration.reserve(joint_names.size());
-    for(unsigned int i = 0; i < _initial_joints_configuration.size(); ++i)
-        _initial_joints_configuration.push_back(0.0);
+	_initial_joints_configuration.reserve(joint_names.size());
+	for (unsigned int i = 0; i < joint_names.size(); ++i)
+		_initial_joints_configuration.push_back(0.0);
 }
 
 std::vector<RTT::base::PortInterface*> KinematicChain::getAssociatedPorts() {
@@ -37,13 +36,17 @@ std::vector<RTT::base::PortInterface*> KinematicChain::getAssociatedPorts() {
 }
 
 bool KinematicChain::initKinematicChain() {
+	RTT::log(RTT::Info) << "DEBUG1" << RTT::endlog();
 	setJointNamesAndIndices();
 	_number_of_dofs = _map_joint_name_index.size();
+	RTT::log(RTT::Info) << "DEBUG2 :" << _number_of_dofs << RTT::endlog();
 	//set last position memory for torque mode
 	_last_pos = new float[_number_of_dofs];
 	memset(_last_pos, 0, _number_of_dofs * sizeof(*_last_pos));
+	RTT::log(RTT::Info) << "DEBUG3" << RTT::endlog();
 	//set zero vector for torque mode 0 vectors
 	zero_vector = new float[_number_of_dofs];
+	RTT::log(RTT::Info) << "DEBUG4" << RTT::endlog();
 	memset(zero_vector, 0, _number_of_dofs * sizeof(*zero_vector));
 	_joint_pos.resize(_number_of_dofs);
 	_joint_pos.setZero();
@@ -53,30 +56,32 @@ bool KinematicChain::initKinematicChain() {
 	_joint_stiff.setZero();
 	_joint_damp.resize(_number_of_dofs);
 	_joint_damp.setZero();
-
+	RTT::log(RTT::Info) << "DEBUG5" << RTT::endlog();
 	if (!setController(std::string(ControlModes::JointPositionCtrl)))
 		return false;
 	if (!setController(std::string(ControlModes::JointImpedanceCtrl)))
 		return false;
 	if (!setController(std::string(ControlModes::JointTorqueCtrl)))
 		return false;
-
+	RTT::log(RTT::Info) << "DEBUG6" << RTT::endlog();
 	setFeedBack();
+	RTT::log(RTT::Info) << "DEBUG7" << RTT::endlog();
 	//TODO change to init krc conrtoller (Possibly may not need anymore but needs adapting to new KRC.src program)
 	if (!initKRC()) {
 		return false;
 	}
 	setInitialPosition(false);
+	RTT::log(RTT::Info) << "DEBUG8" << RTT::endlog();
 	setInitialImpedance();
+	RTT::log(RTT::Info) << "DEBUG9" << RTT::endlog();
 	return true;
 }
 
-bool KinematicChain::resetKinematicChain()
-{
-    setControlMode(ControlModes::JointPositionCtrl);
-    setInitialPosition(false);
-    setInitialImpedance();
-    return true;
+bool KinematicChain::resetKinematicChain() {
+	setControlMode(ControlModes::JointPositionCtrl);
+	setInitialPosition(false);
+	setInitialImpedance();
+	return true;
 }
 
 //scoped names actually become ints for fri
@@ -190,16 +195,19 @@ bool KinematicChain::setJointNamesAndIndices() {
 
 void KinematicChain::setInitialPosition(const bool use_actual_model_pose) {
 	position_controller->orocos_port.clear();
+	RTT::log(RTT::Info) << _joint_names.size()<<" joint size" << RTT::endlog();
 	//get initial positoin from fri, currently using loop possibly convert to Eigen::map or something?
-	if(use_actual_model_pose){
-	for (unsigned int i = 0; i < _joint_names.size(); ++i)
-		position_controller->joint_cmd.angles[i] =
-				_fri_inst->getMsrMsrJntPosition()[i];
-	}else{
-	    for (unsigned int i = 0; i < _joint_names.size(); ++i)
-		position_controller->joint_cmd.angles[i] =
-				_initial_joints_configuration.at(i);
-    }
+	if (use_actual_model_pose) {
+		for (unsigned int i = 0; i < _joint_names.size(); ++i)
+			position_controller->joint_cmd.angles[i] =
+					_fri_inst->getMsrMsrJntPosition()[i];
+	} else {
+		for (unsigned int i = 0; i < _joint_names.size(); ++i){
+			RTT::log(RTT::Info) << position_controller->joint_cmd.angles.size()<<" loop, "<<
+					_initial_joints_configuration.size()<< RTT::endlog();
+			position_controller->joint_cmd.angles[i] =
+					_initial_joints_configuration.at(i);}
+	}
 	position_controller->joint_cmd_fs = RTT::FlowStatus::NewData;
 }
 
@@ -231,17 +239,17 @@ bool KinematicChain::setControlMode(const std::string &controlMode) {
 	}
 	//TODO add all control modes in properly with different options between them
 	//set control modes and the correct cmdFlags as well (must be done in monitor mode not command mode! and can't be changed in command mode)	
-	if(controlMode == ControlModes::JointPositionCtrl){
-		_fri_inst->getCmdBuf().cmd.cmdFlags=FRI_CMD_JNTPOS;
-		_fri_inst->setToKRLInt(14,10);
-	} else if (controlMode == ControlModes::JointTorqueCtrl){
-		_fri_inst->getCmdBuf().cmd.cmdFlags=0;
-		_fri_inst->getCmdBuf().cmd.cmdFlags|=FRI_CMD_JNTPOS;
-		_fri_inst->getCmdBuf().cmd.cmdFlags|=FRI_CMD_JNTSTIFF;
-		_fri_inst->getCmdBuf().cmd.cmdFlags|=FRI_CMD_JNTDAMP;
-		_fri_inst->getCmdBuf().cmd.cmdFlags|=FRI_CMD_JNTTRQ;
-		_fri_inst->setToKRLInt(14,30);
-	}	
+	if (controlMode == ControlModes::JointPositionCtrl) {
+		_fri_inst->getCmdBuf().cmd.cmdFlags = FRI_CMD_JNTPOS;
+		_fri_inst->setToKRLInt(14, 10);
+	} else if (controlMode == ControlModes::JointTorqueCtrl) {
+		_fri_inst->getCmdBuf().cmd.cmdFlags = 0;
+		_fri_inst->getCmdBuf().cmd.cmdFlags |= FRI_CMD_JNTPOS;
+		_fri_inst->getCmdBuf().cmd.cmdFlags |= FRI_CMD_JNTSTIFF;
+		_fri_inst->getCmdBuf().cmd.cmdFlags |= FRI_CMD_JNTDAMP;
+		_fri_inst->getCmdBuf().cmd.cmdFlags |= FRI_CMD_JNTTRQ;
+		_fri_inst->setToKRLInt(14, 30);
+	}
 //	else if (controlMode == ControlModes::JointTorqueCtrl
 //			|| controlMode == ControlModes::JointImpedanceCtrl)
 //		_gazebo_position_joint_controller->Reset();
@@ -254,14 +262,14 @@ void KinematicChain::sense() {
 	//recieve data from fri
 	_fri_inst->doReceiveData();
 	//set mode command to zero so fri does not continue if it is being executed again (possibly move to component stop method)
-	_fri_inst->setToKRLInt(15,0);
+	_fri_inst->setToKRLInt(15, 0);
 	//if not in monitor mode straight return as nothing can be sensed
-	if(_fri_inst->getFrmKRLInt(15)<10){
+	if (_fri_inst->getFrmKRLInt(15) < 10) {
 		return;
 	}
 	//if in monitor mode command fri to switch to command mode with the correct control mode
-	if(_fri_inst->getFrmKRLInt(15) == 10){
-		_fri_inst->setToKRLInt(15,10);
+	if (_fri_inst->getFrmKRLInt(15) == 10) {
+		_fri_inst->setToKRLInt(15, 10);
 		//return;
 	}
 	if (full_feedback) {
@@ -276,7 +284,7 @@ void KinematicChain::sense() {
 		for (unsigned int i = 0; i < _number_of_dofs; ++i) {
 			full_feedback->joint_feedback.velocities(i) =
 					(_fri_inst->getMsrMsrJntPosition()[i] - _last_pos[i])
-							/ (time_now - last_time);
+							/ ((time_now - last_time)*1E-9);
 			_last_pos[i] = _fri_inst->getMsrMsrJntPosition()[i];
 		}
 		//get the current torques
@@ -314,66 +322,70 @@ void KinematicChain::getCommand() {
 }
 
 void KinematicChain::move() {
-/*if(_fri_inst->getQuality()!= FRI_QUALITY::FRI_QUALITY_PERFECT){
-		
-		return;
-	}*/
+	/*if(_fri_inst->getQuality()!= FRI_QUALITY::FRI_QUALITY_PERFECT){
+
+	 return;
+	 }*/
 //only run when KRC is in command mode (don't need to check for perfect communication as the program will only go into command mode when communication is perfect)
-if(_fri_inst->getFrmKRLInt(15)==20){
-	if (_current_control_mode == ControlModes::JointPositionCtrl) {
-		//if(_fri_inst->getCurrentControlScheme()
-		//		!= FRI_CTRL::FRI_CTRL_POSITION){
-		//	_fri_inst->setToKRLInt(1, 10);
-		//}else{
-		//Currently done on index only, maybe convert to names as well?
+	if (_fri_inst->getFrmKRLInt(15) == 20) {
+		if (_current_control_mode == ControlModes::JointPositionCtrl) {
+			//if(_fri_inst->getCurrentControlScheme()
+			//		!= FRI_CTRL::FRI_CTRL_POSITION){
+			//	_fri_inst->setToKRLInt(1, 10);
+			//}else{
+			//Currently done on index only, maybe convert to names as well?
 //		_fri_inst->doPositionControl(
 //				position_controller->joint_cmd.angles.data(), false);
-		std::vector<int> joint_scoped_names = getJointScopedNames();
-		for (unsigned int i = 0; i < joint_scoped_names.size(); ++i) {
-			_joint_pos(joint_scoped_names[i]) =position_controller->joint_cmd.angles(i);
-		}
-		if(position_controller->joint_cmd_fs==RTT::NewData){
-		_fri_inst->doPositionControl(_joint_pos.data(), false);
-		}
-	} else if (_current_control_mode == ControlModes::JointTorqueCtrl) {
-		//if(_fri_inst->getCurrentControlScheme()
-		//		!= FRI_CTRL::FRI_CTRL_JNT_IMP){
-		//	_fri_inst->setToKRLInt(1, 30);
-		//}else{
-		std::vector<int> joint_scoped_names = getJointScopedNames();
-		for (unsigned int i = 0; i < joint_scoped_names.size(); ++i) {
-			_joint_trq(joint_scoped_names[i]) =
-					torque_controller->joint_cmd.torques(i);
-		}
-		_fri_inst->doJntImpedanceControl(_fri_inst->getMsrMsrJntPosition(),
-				zero_vector, zero_vector, _joint_trq.data(), false);
+			std::vector<int> joint_scoped_names = getJointScopedNames();
+			for (unsigned int i = 0; i < joint_scoped_names.size(); ++i) {
+				_joint_pos(joint_scoped_names[i]) =
+						position_controller->joint_cmd.angles(i);
+			}
+			if (position_controller->joint_cmd_fs == RTT::NewData) {
+				_fri_inst->doPositionControl(_joint_pos.data(), false);
+			}
+		} else if (_current_control_mode == ControlModes::JointTorqueCtrl) {
+			//if(_fri_inst->getCurrentControlScheme()
+			//		!= FRI_CTRL::FRI_CTRL_JNT_IMP){
+			//	_fri_inst->setToKRLInt(1, 30);
+			//}else{
+			std::vector<int> joint_scoped_names = getJointScopedNames();
+			for (unsigned int i = 0; i < joint_scoped_names.size(); ++i) {
+				_joint_trq(joint_scoped_names[i]) =
+						torque_controller->joint_cmd.torques(i);
+			}
+			_fri_inst->doJntImpedanceControl(_fri_inst->getMsrMsrJntPosition(),
+					zero_vector, zero_vector, _joint_trq.data(), false);
 //}
-	} else if (_current_control_mode == ControlModes::JointImpedanceCtrl) {
+		} else if (_current_control_mode == ControlModes::JointImpedanceCtrl) {
 //if(_fri_inst->getCurrentControlScheme()
-	//			!= FRI_CTRL::FRI_CTRL_JNT_IMP){
-		//	_fri_inst->setToKRLInt(1, 30);
-	//	}else{
-		std::vector<int> joint_scoped_names = getJointScopedNames();
-		for (unsigned int i = 0; i < joint_scoped_names.size(); ++i) {
-			_joint_pos(joint_scoped_names[i]) =
-					position_controller->joint_cmd.angles(i);
-			_joint_stiff(joint_scoped_names[i]) =
-					impedance_controller->joint_cmd.stiffness(i);
-			_joint_damp(joint_scoped_names[i]) =
-					impedance_controller->joint_cmd.damping(i);
-			_joint_trq(joint_scoped_names[i]) =
-					torque_controller->joint_cmd.torques(i);
-		}
-		_fri_inst->doJntImpedanceControl(_joint_pos.data(), _joint_stiff.data(),
-				_joint_damp.data(), _joint_trq.data(), false);
+			//			!= FRI_CTRL::FRI_CTRL_JNT_IMP){
+			//	_fri_inst->setToKRLInt(1, 30);
+			//	}else{
+			std::vector<int> joint_scoped_names = getJointScopedNames();
+			for (unsigned int i = 0; i < joint_scoped_names.size(); ++i) {
+				_joint_pos(joint_scoped_names[i]) =
+						position_controller->joint_cmd.angles(i);
+				_joint_stiff(joint_scoped_names[i]) =
+						impedance_controller->joint_cmd.stiffness(i);
+				_joint_damp(joint_scoped_names[i]) =
+						impedance_controller->joint_cmd.damping(i);
+				_joint_trq(joint_scoped_names[i]) =
+						torque_controller->joint_cmd.torques(i);
+			}
+			_fri_inst->doJntImpedanceControl(_joint_pos.data(),
+					_joint_stiff.data(), _joint_damp.data(), _joint_trq.data(),
+					false);
 //}
+		}
+	} else {
+		//if not in command mode run keep the jntPosition updated, required by FRI
+		for (int i = 0; i < LBR_MNJ; i++) {
+			_fri_inst->getCmdBuf().cmd.jntPos[i] =
+					_fri_inst->getMsrBuf().data.cmdJntPos[i]
+							+ _fri_inst->getMsrBuf().data.cmdJntPosFriOffset[i];
+		}
 	}
-}else{
-	//if not in command mode run keep the jntPosition updated, required by FRI
-	for(int i = 0; i < LBR_MNJ;i++){
-	_fri_inst->getCmdBuf().cmd.jntPos[i] = _fri_inst->getMsrBuf().data.cmdJntPos[i] + _fri_inst->getMsrBuf().data.cmdJntPosFriOffset[i];
-	}
-}	
 
 	//Send data
 	_fri_inst->doSendData();
@@ -401,28 +413,28 @@ std::string KinematicChain::printKinematicChainInformation() {
 }
 
 bool KinematicChain::initKRC() {
-last_quality = FRI_QUALITY_BAD;
-/*int i = 0;
-RTT::log(RTT::Info) << "Trying to initialize"
-			<< RTT::endlog();
 	last_quality = FRI_QUALITY_BAD;
-//TODO do handshake as separate procedure?
-	while (_fri_inst->getQuality() < FRI_QUALITY::FRI_QUALITY_PERFECT || i<200) {
-RTT::log(RTT::Info) << "Trying to initialize :"<<_fri_inst->getQuality()
-			<< RTT::endlog();
-		_fri_inst->doReceiveData();
-		_fri_inst->setToKRLInt(0, 1);
-		
-		last_quality = _fri_inst->getQuality();
-		if (last_quality >= FRI_QUALITY_OK ) {
-			i++;
-			_fri_inst->setToKRLInt(1, 10);
-			_fri_inst->doTest();
-			//_fri_inst->doDataExchange();
-		}
-		_fri_inst->setToKRLReal(1, _fri_inst->getFrmKRLReal(1));
-		
-		_fri_inst->doSendData();
-	}*/
+	/*int i = 0;
+	 RTT::log(RTT::Info) << "Trying to initialize"
+	 << RTT::endlog();
+	 last_quality = FRI_QUALITY_BAD;
+	 //TODO do handshake as separate procedure?
+	 while (_fri_inst->getQuality() < FRI_QUALITY::FRI_QUALITY_PERFECT || i<200) {
+	 RTT::log(RTT::Info) << "Trying to initialize :"<<_fri_inst->getQuality()
+	 << RTT::endlog();
+	 _fri_inst->doReceiveData();
+	 _fri_inst->setToKRLInt(0, 1);
+
+	 last_quality = _fri_inst->getQuality();
+	 if (last_quality >= FRI_QUALITY_OK ) {
+	 i++;
+	 _fri_inst->setToKRLInt(1, 10);
+	 _fri_inst->doTest();
+	 //_fri_inst->doDataExchange();
+	 }
+	 _fri_inst->setToKRLReal(1, _fri_inst->getFrmKRLReal(1));
+
+	 _fri_inst->doSendData();
+	 }*/
 	return true;
 }

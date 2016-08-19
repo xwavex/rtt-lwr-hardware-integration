@@ -7,7 +7,7 @@ using namespace RTT::os;
 using namespace Eigen;
 
 void lwr_robot::updateHook() {
-    RTT::log(RTT::Info) << "Kinematic Chains map created!" << RTT::endlog();
+   // RTT::log(RTT::Info) << "Kinematic Chains map created!" << RTT::endlog();
     if (!isRunning())
         return;
 
@@ -21,6 +21,6 @@ void lwr_robot::updateHook() {
     for(it = kinematic_chains.begin(); it != kinematic_chains.end(); it++)
         it->second->move();
     
-    RTT::log(RTT::Info) << "Done!" << RTT::endlog();
+   // RTT::log(RTT::Info) << "Done!" << RTT::endlog();
 }
 

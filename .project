@@ -2,9 +2,12 @@
 <projectDescription>
 	<name>rtt-lwr-hardware-integration-Source@rtt-lwr-hardware-integration</name>
 	<comment></comment>
-	<projects></projects>
-	<buildSpec></buildSpec>
-	<natures></natures>
+	<projects>
+	</projects>
+	<buildSpec>
+	</buildSpec>
+	<natures>
+	</natures>
 	<linkedResources>
 		<link>
 			<name>[Subprojects]</name>

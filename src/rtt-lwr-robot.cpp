@@ -23,64 +23,68 @@ lwr_robot::lwr_robot(const std::string &name) :
 	this->addOperation("setControlMode", &lwr_robot::setControlMode, this,
 			RTT::ClientThread);
 
-	this->addOperation("getKinematicChains", &lwr_robot::getKinematicChains, this,
-			RTT::ClientThread);
+	this->addOperation("getKinematicChains", &lwr_robot::getKinematicChains,
+			this, RTT::ClientThread);
 
 	this->addOperation("printKinematicChainInformation",
-			&lwr_robot::printKinematicChainInformation, this, RTT::ClientThread);
+			&lwr_robot::printKinematicChainInformation, this,
+			RTT::ClientThread);
 
 	this->addOperation("getControlMode", &lwr_robot::getControlMode, this,
 			RTT::ClientThread);
 
 	this->addOperation("getAvailableControlMode",
 			&lwr_robot::getControlAvailableMode, this, RTT::ClientThread);
+	this->addOperation("loadURDFAndSRDF", &lwr_robot::loadURDFAndSRDF, this,
+			RTT::ClientThread);
 
-	this->addOperation("reset_model_configuration", &lwr_robot::resetModelConfiguration,
-                this, RTT::ClientThread);
+	this->addOperation("reset_model_configuration",
+			&lwr_robot::resetModelConfiguration, this, RTT::ClientThread);
 
 	//assign ip address of this computer
 	this->ip_addr = "192.168.0.51";
 	addProperty("ip_addr", ip_addr).doc("IP address of the computer");
+
+	_models_loaded = false;
 }
 /*
-std::map<std::string, int> lwr_robot::getJointMappingForPort(
-		std::string portName) {
-	std::map<std::string, int> result;
-	// find port in kinematic chain. Ports should be unique so no problem here!
-	for (std::map<std::string, boost::shared_ptr<KinematicChain>>::iterator it =
-			kinematic_chains.begin(); it != kinematic_chains.end(); it++) {
-		std::vector<RTT::base::PortInterface*> interface =
-				it->second->getAssociatedPorts();
-		std::vector<base::PortInterface*>::iterator iiter;
+ std::map<std::string, int> lwr_robot::getJointMappingForPort(
+ std::string portName) {
+ std::map<std::string, int> result;
+ // find port in kinematic chain. Ports should be unique so no problem here!
+ for (std::map<std::string, boost::shared_ptr<KinematicChain>>::iterator it =
+ kinematic_chains.begin(); it != kinematic_chains.end(); it++) {
+ std::vector<RTT::base::PortInterface*> interface =
+ it->second->getAssociatedPorts();
+ std::vector<base::PortInterface*>::iterator iiter;
 
-		base::PortInterface* candidatePort = 0;
+ base::PortInterface* candidatePort = 0;
 
-		for (iiter = interface.begin(); iiter != interface.end(); ++iiter) {
-			if ((*iiter)->getName() == portName) {
-				candidatePort = *iiter;
-				break;
-			}
-		}
+ for (iiter = interface.begin(); iiter != interface.end(); ++iiter) {
+ if ((*iiter)->getName() == portName) {
+ candidatePort = *iiter;
+ break;
+ }
+ }
 
-		if (candidatePort) {
-			std::vector<std::string> jointNames = it->second->getJointNames();
-			// assuming we take the index as stored in the vector...
-			for (unsigned int i = 0; i < jointNames.size(); i++) {
-				result[jointNames[i]] = i;
-			}
-			return result;
-		}
-	}
-	return result;
-}*/
+ if (candidatePort) {
+ std::vector<std::string> jointNames = it->second->getJointNames();
+ // assuming we take the index as stored in the vector...
+ for (unsigned int i = 0; i < jointNames.size(); i++) {
+ result[jointNames[i]] = i;
+ }
+ return result;
+ }
+ }
+ return result;
+ }*/
 
-bool lwr_robot::resetModelConfiguration()
-{
-    bool reset = true;
-    std::map<std::string, boost::shared_ptr<KinematicChain>>::iterator it;
-    for(it = kinematic_chains.begin(); it != kinematic_chains.end(); it++)
-        reset = reset && it->second->resetKinematicChain();
-    return reset;
+bool lwr_robot::resetModelConfiguration() {
+	bool reset = true;
+	std::map<std::string, boost::shared_ptr<KinematicChain>>::iterator it;
+	for (it = kinematic_chains.begin(); it != kinematic_chains.end(); it++)
+		reset = reset && it->second->resetKinematicChain();
+	return reset;
 }
 
 std::string lwr_robot::printKinematicChainInformation(
@@ -156,11 +160,12 @@ bool lwr_robot::getModel(const std::string& model_name) {
 	return bool(model);
 }
 
-
 bool lwr_robot::configureHook() {
 	//might not need the model stuff for this component or maybe have it in this component and provide to everything else?
 	if (!_models_loaded || !bool(model)) {
-        RTT::log(RTT::Error) <<"URDF and SRDF models has not been passed. Call loadURDFAndSRDF(URDF_path, SRDF_path)"<<RTT::endlog();
+		RTT::log(RTT::Error)
+				<< "URDF and SRDF models has not been passed. Call loadURDFAndSRDF(URDF_path, SRDF_path)"
+				<< RTT::endlog();
 		return false;
 	}
 	urdf_joints_ = model->joints_;
@@ -171,83 +176,74 @@ bool lwr_robot::configureHook() {
 	RTT::log(RTT::Info) << "Model has " << urdf_links_.size() << " links"
 			<< RTT::endlog();
 
- for(unsigned int i = 0; i < _xbotcore_model.get_chain_names().size(); ++i){
-        std::string chain_name = _xbotcore_model.get_chain_names()[i];
-        std::vector<std::string> enabled_joints_in_chain;
-        _xbotcore_model.get_enabled_joints_in_chain(chain_name,enabled_joints_in_chain);
+	for (unsigned int i = 0; i < _xbotcore_model.get_chain_names().size();
+			++i) {
+
+		std::string chain_name = _xbotcore_model.get_chain_names()[i];
+		RTT::log(RTT::Info) << chain_name << " :chain" << RTT::endlog();
+		std::vector<std::string> enabled_joints_in_chain;
+		_xbotcore_model.get_enabled_joints_in_chain(chain_name,
+				enabled_joints_in_chain);
 		srdf::Model::RTTGazebo temp = _xbotcore_model.getRTTGazebo(chain_name);
-        kinematic_chains.insert(std::pair<std::string, boost::shared_ptr<KinematicChain>>(
-            chain_name, boost::shared_ptr<KinematicChain>(
-                new KinematicChain(chain_name, enabled_joints_in_chain, *(this->ports()), new friRemote(49939,temp.hardware_info_.address_.c_str(),ip_addr.c_str(),this->getActivity()->thread()->getTask())))));
-    }
-
-    RTT::log(RTT::Info) << "Kinematic Chains map created!" << RTT::endlog();
-
-    for(std::map<std::string, boost::shared_ptr<KinematicChain>>::iterator it = kinematic_chains.begin();
-        it != kinematic_chains.end(); it++){
-        if(!(it->second->initKinematicChain())){
-            RTT::log(RTT::Warning) << "Problem Init Kinematic Chain" <<
-                it->second->getKinematicChainName() << RTT::endlog();
-            return false;
-        }
-    }
-/*
-	hardcoded_chains chains;
-	std::map<std::string, std::pair<std::string,std::vector<std::pair<std::string,int>>>>::iterator it;
-	//add the kinematic chain with fri remote interface depedant on hardcoded chains at the moment
-	for (it = chains.map_chains_joints.begin();
-			it != chains.map_chains_joints.end(); it++) {
 		kinematic_chains.insert(
 				std::pair<std::string, boost::shared_ptr<KinematicChain>>(
-						it->first,
-						boost::shared_ptr<KinematicChain>(//TODO FRI INST
-								new KinematicChain(it->first, it->second.second,
-										*(this->ports()), new friRemote(49939, it->second.first.c_str(),ip_addr.c_str(), this->getActivity()->thread()->getTask())))));
+						chain_name,
+						boost::shared_ptr<KinematicChain>(
+								new KinematicChain(chain_name,
+										enabled_joints_in_chain,
+										*(this->ports()),
+										new friRemote(49939,
+												temp.hardware_info_.address_.c_str(),
+												ip_addr.c_str(),
+												this->getActivity()->thread()->getTask())))));
 	}
-	RTT::log(RTT::Info) << "Kinematic Chains map created!" << RTT::endlog();
-	for (std::map<std::string, boost::shared_ptr<KinematicChain>>::iterator it =
-				kinematic_chains.begin(); it != kinematic_chains.end(); it++) {
-			if (!(it->second->initKinematicChain())) {
-				RTT::log(RTT::Warning) << "Problem Init Kinematic Chain"
-						<< it->second->getKinematicChainName() << RTT::endlog();
-				return false;
-			}
-		}*/
-		RTT::log(RTT::Info) << "Kinematic Chains Initialized!" << RTT::endlog();
 
-		RTT::log(RTT::Warning) << "Done configuring component" << RTT::endlog();
+	RTT::log(RTT::Info) << "Kinematic Chains map created!" << kinematic_chains.size()<< RTT::endlog();
+
+	for (std::map<std::string, boost::shared_ptr<KinematicChain>>::iterator it =
+			kinematic_chains.begin(); it != kinematic_chains.end(); it++) {
+		if (!(it->second->initKinematicChain())) {
+			RTT::log(RTT::Warning) << "Problem Init Kinematic Chain"
+					<< it->second->getKinematicChainName() << RTT::endlog();
+			return false;
+		}
+	}
+	RTT::log(RTT::Info) << "Kinematic Chains Initialized!" << RTT::endlog();
+
+	RTT::log(RTT::Warning) << "Done configuring component" << RTT::endlog();
 	return true;
 }
 
-bool lwr_robot::loadURDFAndSRDF(const std::string &URDF_path, const std::string &SRDF_path)
-{
-    if(!_models_loaded)
-    {
-        std::string _urdf_path = URDF_path;
-        std::string _srdf_path = SRDF_path;
+bool lwr_robot::loadURDFAndSRDF(const std::string &URDF_path,
+		const std::string &SRDF_path) {
+	if (!_models_loaded) {
+		std::string _urdf_path = URDF_path;
+		std::string _srdf_path = SRDF_path;
 
-        RTT::log(RTT::Info)<<"URDF path: "<<_urdf_path<<RTT::endlog();
-        RTT::log(RTT::Info)<<"SRDF path: "<<_srdf_path<<RTT::endlog();
+		RTT::log(RTT::Info) << "URDF path: " << _urdf_path << RTT::endlog();
+		RTT::log(RTT::Info) << "SRDF path: " << _srdf_path << RTT::endlog();
 
-        _models_loaded = _xbotcore_model.init(_urdf_path, _srdf_path);
+		_models_loaded = _xbotcore_model.init(_urdf_path, _srdf_path);
 
-        for(unsigned int i = 0; i < _xbotcore_model.get_chain_names().size(); ++i){
-            RTT::log(RTT::Info)<<"chain #"<<i<<" "<<_xbotcore_model.get_chain_names()[i]<<RTT::endlog();
-            std::vector<std::string> enabled_joints_in_chain_i;
-            _xbotcore_model.get_enabled_joints_in_chain(_xbotcore_model.get_chain_names()[i], enabled_joints_in_chain_i);
-            for(unsigned int j = 0; j < enabled_joints_in_chain_i.size(); ++j)
-                RTT::log(RTT::Info)<<"  "<<enabled_joints_in_chain_i[j]<<RTT::endlog();
-        }
-        model = _xbotcore_model.get_urdf_model();
-    }
-    else
-        RTT::log(RTT::Info)<<"URDF and SRDF have been already loaded!"<<RTT::endlog();
+		for (unsigned int i = 0; i < _xbotcore_model.get_chain_names().size();
+				++i) {
+			RTT::log(RTT::Info) << "chain #" << i << " "
+					<< _xbotcore_model.get_chain_names()[i] << RTT::endlog();
+			std::vector<std::string> enabled_joints_in_chain_i;
+			_xbotcore_model.get_enabled_joints_in_chain(
+					_xbotcore_model.get_chain_names()[i],
+					enabled_joints_in_chain_i);
+			for (unsigned int j = 0; j < enabled_joints_in_chain_i.size(); ++j)
+				RTT::log(RTT::Info) << "  " << enabled_joints_in_chain_i[j]
+						<< RTT::endlog();
+		}
+		model = _xbotcore_model.get_urdf_model();
+	} else
+		RTT::log(RTT::Info) << "URDF and SRDF have been already loaded!"
+				<< RTT::endlog();
 
-    return _models_loaded;
+	return _models_loaded;
 }
 
-
-
-ORO_CREATE_COMPONENT_LIBRARY()
-ORO_LIST_COMPONENT_TYPE(cogimon::lwr_robot)
+ORO_CREATE_COMPONENT_LIBRARY()ORO_LIST_COMPONENT_TYPE(cogimon::lwr_robot)
 
