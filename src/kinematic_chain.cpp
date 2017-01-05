@@ -120,7 +120,7 @@ void KinematicChain::setFeedBack() {
 	full_feedback->orocos_port.setName(
 			_kinematic_chain_name + "_JointFeedback");
 	full_feedback->orocos_port.doc(
-			"Output for Joint-fb from FRI to Orocos world. Contains joint-position, -velocity and -torque.");
+			"Output for Joint-fb from FRI to Orocos world. Contains joint-position, and -torque.");
 	_ports.addPort(full_feedback->orocos_port);
 	// TODO needs to be solved better
 	_inner_ports.push_back(

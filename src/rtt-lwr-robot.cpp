@@ -46,6 +46,7 @@ lwr_robot::lwr_robot(const std::string &name) :
 	addProperty("ip_addr", ip_addr).doc("IP address of the computer");
 
 	_models_loaded = false;
+	remote = NULL;
 }
 /*
  std::map<std::string, int> lwr_robot::getJointMappingForPort(
