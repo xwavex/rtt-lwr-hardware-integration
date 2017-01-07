@@ -28,6 +28,10 @@ KinematicChain::KinematicChain(const std::string& chain_name,
 	_initial_joints_configuration.reserve(joint_names.size());
 	for (unsigned int i = 0; i < joint_names.size(); ++i)
 		_initial_joints_configuration.push_back(0.0);
+
+	output_M_var.setZero();
+	output_M_port.setName("output_M");
+	output_M_port.setDataSample(output_M_var);
 }
 
 std::vector<RTT::base::PortInterface*> KinematicChain::getAssociatedPorts() {
@@ -294,6 +298,8 @@ void KinematicChain::sense() {
 			full_feedback->joint_feedback.torques(i) =
 					_fri_inst->getMsrJntTrq()[i];
 		}
+
+		output_M_port.write(Eigen::Map<Eigen::Matrix<float,7,7>>(_fri_inst->getMsrBuf().data.massMatrix));
 
 		if (full_feedback->orocos_port.connected())
 			full_feedback->orocos_port.write(full_feedback->joint_feedback);
