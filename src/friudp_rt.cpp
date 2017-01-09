@@ -96,7 +96,7 @@ void friUdp::Init(const char * remoteHost, const char * serverHost) {
 
 	// make the socket non blocking after a specific amount of nanoseconds
 	//int64_t tout = 5 * 20000000000;
-	int64_t tout = 1000000000;
+	int64_t tout = 1000000;
 	// 0.5 milliseconds
 	//int64_t tout = 1*10000;
 	// let socket immidiately return
