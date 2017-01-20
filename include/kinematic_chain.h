@@ -73,6 +73,8 @@ private:
     std::map<std::string, int> _map_joint_name_index;
     Eigen::VectorXf _joint_pos, _joint_trq, _joint_stiff,_joint_damp;
     RTT::OutputPort<Eigen::Matrix<float,7,7>> output_M_port;
+    RTT::OutputPort<rstrt::dynamics::JointTorques> estExtTorques_port;
+    rstrt::dynamics::JointTorques estExtTorques;
     Eigen::Matrix<float,7,7> output_M_var;
 
 	std::vector<double> _initial_joints_configuration;
