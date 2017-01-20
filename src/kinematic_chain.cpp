@@ -34,8 +34,11 @@ KinematicChain::KinematicChain(const std::string& chain_name,
 	estExtTorques_port.setName("est_ext_torque");
 	estExtTorques_port.setDataSample(estExtTorques);
 	output_M_var.setZero();
-	output_M_port.setName("output_M");
+	std::string temp_str = chain_name;
+	temp_str.append("_output_M");
+	output_M_port.setName(temp_str);
 	output_M_port.setDataSample(output_M_var);
+	_ports.addPort(output_M_port);
 }
 
 std::vector<RTT::base::PortInterface*> KinematicChain::getAssociatedPorts() {
@@ -272,17 +275,17 @@ void KinematicChain::sense() {
 	_fri_inst->setToKRLInt(15, 0);
 	//if not in monitor mode straight return as nothing can be sensed
 	if (_fri_inst->getFrmKRLInt(15) < 10) {
-		RTT::log(RTT::Info) << _fri_inst->getFrmKRLInt(15)<<", "<<_fri_inst->getQuality()<<" :NOTHING BEING SENSED"<< RTT::endlog();
+		RTT::log(RTT::Info) << _fri_inst->getFrmKRLInt(15)<<", "<<_fri_inst->getQuality()<<" :NOTHING BEING SENSED"<<_kinematic_chain_name<< RTT::endlog();
 		return;
 	}
 	//if in monitor mode command fri to switch to command mode with the correct control mode
 	if (_fri_inst->getFrmKRLInt(15) == 10) {
-		RTT::log(RTT::Info) << "SWITCHING TO COMMAND MODE"<< RTT::endlog();
+		RTT::log(RTT::Info) <<_fri_inst->getQuality() <<" SWITCHING TO COMMAND MODE"<<_kinematic_chain_name<< RTT::endlog();
 		_fri_inst->setToKRLInt(15, 10);
 		//return;
 	}
 	if (full_feedback) {
-		RTT::log(RTT::Info) << "FEEDBACK RECEIVING"<< RTT::endlog();
+		RTT::log(RTT::Info) << "FEEDBACK RECEIVING"<<_kinematic_chain_name<< RTT::endlog();
 		time_now = RTT::os::TimeService::Instance()->getNSecs();
 		//get the current pos
 		for (unsigned int i = 0; i < _number_of_dofs; ++i)
@@ -340,7 +343,7 @@ void KinematicChain::move() {
 	 return;
 	 }*/
 //only run when KRC is in command mode (don't need to check for perfect communication as the program will only go into command mode when communication is perfect)
-	RTT::log(RTT::Info) << "MOVE"<< RTT::endlog();
+	RTT::log(RTT::Info) << "MOVE "<<_kinematic_chain_name<< RTT::endlog();
 	if (_fri_inst->getFrmKRLInt(15) == 20) {
 		RTT::log(RTT::Info) << "CMD MODE"<< RTT::endlog();
 		if (_current_control_mode == ControlModes::JointPositionCtrl) {

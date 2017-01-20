@@ -193,7 +193,7 @@ bool lwr_robot::configureHook() {
 								new KinematicChain(chain_name,
 										enabled_joints_in_chain,
 										*(this->ports()),
-										new friRemote(49939,
+										new friRemote(temp.hardware_info_.portNo_,
 												temp.hardware_info_.address_.c_str(),
 												ip_addr.c_str(),
 												this->getActivity()->thread()->getTask())))));
