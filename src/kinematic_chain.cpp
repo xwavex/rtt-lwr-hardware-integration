@@ -29,6 +29,10 @@ KinematicChain::KinematicChain(const std::string& chain_name,
 	for (unsigned int i = 0; i < joint_names.size(); ++i)
 		_initial_joints_configuration.push_back(0.0);
 
+	estExtTorques = rstrt::dynamics::JointTorques(_joint_names.size());
+	estExtTorques.torques.setZero();
+	estExtTorques_port.setName("est_ext_torque");
+	estExtTorques_port.setDataSample(estExtTorques);
 	output_M_var.setZero();
 	output_M_port.setName("output_M");
 	output_M_port.setDataSample(output_M_var);
@@ -300,7 +304,8 @@ void KinematicChain::sense() {
 		}
 
 		output_M_port.write(Eigen::Map<Eigen::Matrix<float,7,7>>(_fri_inst->getMsrBuf().data.massMatrix));
-
+		estExtTorques.torques = Eigen::Map<Eigen::VectorXf>(_fri_inst->getMsrBuf().data.estExtJntTrq,7,1);
+		estExtTorques_port.write(estExtTorques);
 		if (full_feedback->orocos_port.connected())
 			full_feedback->orocos_port.write(full_feedback->joint_feedback);
 		last_time = time_now;
