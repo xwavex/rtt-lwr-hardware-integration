@@ -96,7 +96,7 @@ void friUdp::Init(const char * remoteHost, const char * serverHost) {
 
 	// make the socket non blocking after a specific amount of nanoseconds
 	//int64_t tout = 5 * 20000000000;
-	int64_t tout = 1000000;
+	int64_t tout = 1000;
 	// 0.5 milliseconds
 	//int64_t tout = 1*10000;
 	// let socket immidiately return
@@ -163,7 +163,7 @@ void friUdp::Init(const char * remoteHost, const char * serverHost) {
 	if (remoteHost) {
 		krcAddr.sin_addr.s_addr = inet_addr(remoteHost);
 		krcAddr.sin_family = AF_INET;
-		krcAddr.sin_port = htons(49938);
+		krcAddr.sin_port = htons(49939);
 		printf("port %d %d\n", 49939, htons(49939));
 		printf("preinitialized remote host to %s and port %d\n",
 				remoteHost, htons(49939));

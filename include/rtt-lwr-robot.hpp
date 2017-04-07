@@ -47,7 +47,7 @@ protected:
     std::string getControlMode(const std::string& kinematic_chain);
     std::vector<std::string> getControlAvailableMode(const std::string& kinematic_chain);
     std::string printKinematicChainInformation(const std::string& kinematic_chain);
-    urdf::ModelInterfaceSharedPtr model;
+    boost::shared_ptr<urdf::ModelInterface const> model;
     
     bool loadURDFAndSRDF(const std::string& URDF_path, const std::string& SRDF_path);
     std::map<std::string, std::vector<std::string> > getKinematiChainsAndJoints();

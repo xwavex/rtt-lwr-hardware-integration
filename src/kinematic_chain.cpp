@@ -263,25 +263,39 @@ bool KinematicChain::setControlMode(const std::string &controlMode) {
 //	else if (controlMode == ControlModes::JointTorqueCtrl
 //			|| controlMode == ControlModes::JointImpedanceCtrl)
 //		_gazebo_position_joint_controller->Reset();
-
+	_fri_inst->doDataExchange();
 	_current_control_mode = controlMode;
 	return true;
 }
 
 void KinematicChain::sense() {
+	RTT::log(RTT::Info) <<_fri_inst->getQuality() <<" QUALITY"<<RTT::endlog();
 	//recieve data from fri
 	_fri_inst->doReceiveData();
 	//set mode command to zero so fri does not continue if it is being executed again (possibly move to component stop method)
 	_fri_inst->setToKRLInt(15, 0);
+	if(_fri_inst->getQuality()<2){
+	    return;
+	}
 	//if not in monitor mode straight return as nothing can be sensed
 	if (_fri_inst->getFrmKRLInt(15) < 10) {
 		RTT::log(RTT::Info) << _fri_inst->getFrmKRLInt(15)<<", "<<_fri_inst->getQuality()<<" :NOTHING BEING SENSED"<<_kinematic_chain_name<< RTT::endlog();
 		return;
 	}
+	/*if (_fri_inst->getCurrentControlScheme()!=FRI_CTRL_JNT_IMP){
+		RTT::log(RTT::Info) << _fri_inst->getFrmKRLInt(15)<<", "<<_fri_inst->getQuality()<<" :ControlMode"<<_kinematic_chain_name<< RTT::endlog();
+		//setCommand
+		return;
+	}*/
 	//if in monitor mode command fri to switch to command mode with the correct control mode
 	if (_fri_inst->getFrmKRLInt(15) == 10) {
 		RTT::log(RTT::Info) <<_fri_inst->getQuality() <<" SWITCHING TO COMMAND MODE"<<_kinematic_chain_name<< RTT::endlog();
+		if(_fri_inst->getQuality()>=2){
 		_fri_inst->setToKRLInt(15, 10);
+		//_fri_inst->doDataExchange();
+		}
+		//setControlMode(_current_control_mode);
+
 		//return;
 	}
 	if (full_feedback) {
@@ -313,9 +327,13 @@ void KinematicChain::sense() {
 			full_feedback->orocos_port.write(full_feedback->joint_feedback);
 		last_time = time_now;
 	}
+	
 }
 
 void KinematicChain::getCommand() {
+	if(_fri_inst->getQuality()<2){
+	    return;
+	}
 	if (_current_control_mode == ControlModes::JointTorqueCtrl)
 		torque_controller->joint_cmd_fs =
 				torque_controller->orocos_port.readNewest(
@@ -338,6 +356,10 @@ void KinematicChain::getCommand() {
 }
 
 void KinematicChain::move() {
+if(_fri_inst->getQuality()<2){
+	    _fri_inst->doSendData();
+	    return;
+	}
 	/*if(_fri_inst->getQuality()!= FRI_QUALITY::FRI_QUALITY_PERFECT){
 
 	 return;
@@ -364,7 +386,7 @@ void KinematicChain::move() {
 			if (position_controller->joint_cmd_fs == RTT::NewData) {
 				_fri_inst->doPositionControl(_joint_pos.data(), false);
 			}
-		} else if (_current_control_mode == ControlModes::JointTorqueCtrl) {
+		} else if (_current_control_mode == ControlModes::JointTorqueCtrl && _fri_inst->getCurrentControlScheme()==FRI_CTRL_JNT_IMP) {
 			//if(_fri_inst->getCurrentControlScheme()
 			//		!= FRI_CTRL::FRI_CTRL_JNT_IMP){
 			//	_fri_inst->setToKRLInt(1, 30);
@@ -405,6 +427,7 @@ void KinematicChain::move() {
 					_fri_inst->getMsrBuf().data.cmdJntPos[i]
 							+ _fri_inst->getMsrBuf().data.cmdJntPosFriOffset[i];
 		}
+		RTT::log(RTT::Info) << _fri_inst->getFrmKRLInt(15)<<", "<<_fri_inst->getQuality()<<" :ControlMode"<<_kinematic_chain_name<< RTT::endlog();
 	}
 
 	//Send data

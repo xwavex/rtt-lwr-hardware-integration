@@ -18,7 +18,7 @@ include(${OROCOS-RTT_USE_FILE_PATH}/UseOROCOS-RTT.cmake )
 set ( CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/Modules/  )
 find_package(Eigen REQUIRED)
 find_package(Boost COMPONENTS thread REQUIRED)
-find_package(urdfdom_headers 0.4.2 REQUIRED)
+find_package(urdfdom_headers 0.4.0 REQUIRED)
 find_package(srdfdom_advr REQUIRED)
 find_package(XBotCoreModel REQUIRED)
 
