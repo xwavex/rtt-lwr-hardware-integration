@@ -84,9 +84,9 @@ void friUdp::Init(const char * remoteHost, const char * serverHost) {
 
 #ifdef HAVE_RTNET
 	/* socket creation */
-	udp_socket_ = rt_dev_socket(AF_INET, SOCK_DGRAM, 0);
+	udp_socket_ = rt_dev_socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
 #else
-	udp_socket_ = socket(PF_INET, SOCK_DGRAM, 0);
+	udp_socket_ = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP);
 #endif
 	if (udp_socket_ < 0) {
 		printf("cannot create listener sock, error: %d, %s", errno,
@@ -96,18 +96,19 @@ void friUdp::Init(const char * remoteHost, const char * serverHost) {
 
 	// make the socket non blocking after a specific amount of nanoseconds
 	//int64_t tout = 5 * 20000000000;
-	int64_t tout = 1000;
+	//handle latency spikes or message offset of 1msec
+	int64_t tout = 100000;//0.1msec
 	// 0.5 milliseconds
 	//int64_t tout = 1*10000;
 	// let socket immidiately return
 	// int64_t tout = -1;
-#ifdef HAVE_RTNET
-	if (rt_dev_ioctl(udp_socket_, RTNET_RTIOC_TIMEOUT, &tout) < 0) {
-		printf("cannot make socket non-blocking, error: %d, %s", errno,
-				strerror(errno));
-		exit(-1);
-	}
-#endif
+// #ifdef HAVE_RTNET
+// 	if (rt_dev_ioctl(udp_socket_, RTNET_RTIOC_TIMEOUT, &tout) < 0) {
+// 		printf("cannot make socket non-blocking, error: %d, %s", errno,
+// 				strerror(errno));
+// 		exit(-1);
+// 	}
+// #endif
 #ifdef HAVE_TIME_STAMP_RECEIVE
 	{
 		int temp = 1;
@@ -261,7 +262,7 @@ void friUdp::Close(void) {
 }
 
 #ifdef HAVE_TIME_STAMP_RECEIVE
-// Socket option SO_TIMESTAMP is supported 
+// Socket option SO_TIMESTAMP is supported
 /* receive with timestamp  */
 int friUdp::RecvPacket(int fd, tFriMsrData* p, struct timeval* ts, struct sockaddr_in* client)
 {
@@ -370,13 +371,13 @@ int friUdp::RecvPacket(int udp_socket, tFriMsrData* data, struct timeval* ts,
 #ifdef VXWORKS //USE_BERKELEY_PACKAGE_FILTER_VXWORKS
 #define DEBUG_BPF_READ
 
-#include "vxworks.h" 
-#include "bpfDrv.h" 
+#include "vxworks.h"
+#include "bpfDrv.h"
 #include "ioLib.h"
-#include <logLib.h> 
+#include <logLib.h>
 #include <sys/ioctl.h>
 //#include "drv/netif/smNetLib.h"
-#include <wrn/coreip/net/ethernet.h> 
+#include <wrn/coreip/net/ethernet.h>
 #include <wrn/coreip/net/if.h>
 #include <wrn/coreip/netinet/ip.h>
 #include <wrn/coreip/netinet/udp.h>
@@ -504,7 +505,7 @@ void testBPF1(int socketPort, char * devName)
 		// im bpf header steht noch ein Timestamp -- waere gut fuer Timing thematik
 		//
 
-//	Empfangene Rohdaten ohne bpf Header	
+//	Empfangene Rohdaten ohne bpf Header
 		pbuffer = (char *)buf + buf->bh_hdrlen;
 
 // Empfangene Rohdatenlaenge ohne bpf Header

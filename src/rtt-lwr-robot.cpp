@@ -247,6 +247,8 @@ bool lwr_robot::loadURDFAndSRDF(const std::string &URDF_path,
 		RTT::log(RTT::Info) << "URDF and SRDF have been already loaded!"
 				<< RTT::endlog();
 
+RTT::log(RTT::Info) << "MODEL LOADED"
+				<< RTT::endlog();
 	return _models_loaded;
 }
 

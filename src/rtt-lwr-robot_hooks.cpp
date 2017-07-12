@@ -7,11 +7,11 @@ using namespace RTT::os;
 using namespace Eigen;
 
 void lwr_robot::updateHook() {
-   RTT::log(RTT::Info) << "Start Update" << RTT::endlog();
+   //RTT::log(RTT::Info) << "Start Update" << RTT::endlog();
     if (!isRunning())
         return;
 
-    std::map<std::string, boost::shared_ptr<KinematicChain>>::iterator it;
+
 for(it = kinematic_chains.begin(); it != kinematic_chains.end(); it++)
         it->second->sense();
 
@@ -21,12 +21,11 @@ for(it = kinematic_chains.begin(); it != kinematic_chains.end(); it++)
     for(it = kinematic_chains.begin(); it != kinematic_chains.end(); it++)
         it->second->move();
 
-    
+    this->trigger();
     //remote->doReceiveData();
-    
 
-    
-    
-   RTT::log(RTT::Info) << "Done!" << RTT::endlog();
+
+
+
+   //RTT::log(RTT::Info) << "Done!" << RTT::endlog();
 }
-

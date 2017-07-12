@@ -73,6 +73,7 @@ protected:
 
     bool _models_loaded;
     XBot::XBotCoreModel _xbotcore_model;
+std::map<std::string, boost::shared_ptr<KinematicChain>>::iterator it;
 
 private:
     bool is_configured;

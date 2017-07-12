@@ -48,6 +48,7 @@
 
 #ifdef HAVE_RTNET
 #include <rtnet.h>
+#include <rtdm/rtdm.h>
 #endif
 
 #ifdef VXWORKS
@@ -93,7 +94,7 @@
 
 
 #ifdef HAVE_TIME_STAMP_RECEIVE
- /** Receive Timestamp -- mechanism works under 
+ /** Receive Timestamp -- mechanism works under
      QNX, Linux?
 
      Not under Windows - and under VxWorks
@@ -143,7 +144,7 @@ class friUdp{
   ~friUdp();
 
  protected:
-  /// Note: Remote host need not to be specified - if NULL, wait for the 
+  /// Note: Remote host need not to be specified - if NULL, wait for the
   /// incoming packages
   void Init(const char * remoteHost=NULL, const char * serverHost = NULL);
   void Close(void);
@@ -159,11 +160,11 @@ struct sockaddr_in krcAddr;
   /// socket
   int udp_socket_;
   int serverPort;
-  
+
   /// if timestamp on receive is available, last received value can be inquired here
   double m_timestamp;
  public:
-  /// This feature will be available only for systems, which support 
+  /// This feature will be available only for systems, which support
   /// SO_TIMESTAMP in the socket options, e.g. qnx
   double	getLastTimestamp() { return m_timestamp; }
 };
