@@ -45,6 +45,7 @@ public:
     std::string printKinematicChainInformation();
     std::vector<RTT::base::PortInterface*> getAssociatedPorts();
 
+    bool recieved;
 
     boost::shared_ptr<position_ctrl> position_controller;
     boost::shared_ptr<impedance_ctrl> impedance_controller;
@@ -52,6 +53,7 @@ public:
 
     boost::shared_ptr<full_fbk> full_feedback;
 
+    void setGravity(bool g);
 private:
 
     RTT::nsecs time_now, last_time;
@@ -76,6 +78,7 @@ private:
     RTT::OutputPort<rstrt::dynamics::JointTorques> estExtTorques_port;
     rstrt::dynamics::JointTorques estExtTorques;
     Eigen::Matrix<float,7,7> output_M_var;
+    bool include_gravity;
 
 	std::vector<double> _initial_joints_configuration;
 

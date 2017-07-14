@@ -39,6 +39,7 @@ KinematicChain::KinematicChain(const std::string& chain_name,
 	output_M_port.setName(temp_str);
 	output_M_port.setDataSample(output_M_var);
 	_ports.addPort(output_M_port);
+	include_gravity=true;
 }
 
 std::vector<RTT::base::PortInterface*> KinematicChain::getAssociatedPorts() {
@@ -248,7 +249,7 @@ bool KinematicChain::setControlMode(const std::string &controlMode) {
 		return false;
 	}
 	//TODO add all control modes in properly with different options between them
-	//set control modes and the correct cmdFlags as well (must be done in monitor mode not command mode! and can't be changed in command mode)	
+	//set control modes and the correct cmdFlags as well (must be done in monitor mode not command mode! and can't be changed in command mode)
 	if (controlMode == ControlModes::JointPositionCtrl) {
 		_fri_inst->getCmdBuf().cmd.cmdFlags = FRI_CMD_JNTPOS;
 		_fri_inst->setToKRLInt(14, 10);
@@ -269,9 +270,13 @@ bool KinematicChain::setControlMode(const std::string &controlMode) {
 }
 
 void KinematicChain::sense() {
-	
+
 	//recieve data from fri
-	_fri_inst->doReceiveData();
+	int r = _fri_inst->doReceiveData();
+recieved = (r>=0);
+	if(!recieved){
+		return;
+	}
 	//RTT::log(RTT::Info) << _fri_inst->doReceiveData()<< ":RECIEVING"<<RTT::endlog();
 //RTT::log(RTT::Info) <<_fri_inst->getQuality() <<" QUALITY"<<RTT::endlog();
 	//set mode command to zero so fri does not continue if it is being executed again (possibly move to component stop method)
@@ -313,13 +318,14 @@ void KinematicChain::sense() {
 		for (unsigned int i = 0; i < _number_of_dofs; ++i) {
 			full_feedback->joint_feedback.velocities(i) =
 					(_fri_inst->getMsrMsrJntPosition()[i] - _last_pos[i])
-							/ ((time_now - last_time)*1E-9);
+							/ _fri_inst->getMsrBuf().intf.desiredMsrSampleTime;//((time_now - last_time)*1E-9);
 			_last_pos[i] = _fri_inst->getMsrMsrJntPosition()[i];
 		}
 		//get the current torques
 		for (unsigned int i = 0; i < _number_of_dofs; ++i) {
-			full_feedback->joint_feedback.torques(i) =
-					_fri_inst->getMsrJntTrq()[i];
+			// full_feedback->joint_feedback.torques(i) =
+			// 		_fri_inst->getMsrJntTrq()[i];
+			full_feedback->joint_feedback.torques(i) =_fri_inst->getMsrBuf().data.gravity[i];
 		}
 
 		output_M_port.write(Eigen::Map<Eigen::Matrix<float,7,7>>(_fri_inst->getMsrBuf().data.massMatrix));
@@ -329,10 +335,13 @@ void KinematicChain::sense() {
 			full_feedback->orocos_port.write(full_feedback->joint_feedback);
 		last_time = time_now;
 	}
-	
+
 }
 
 void KinematicChain::getCommand() {
+	if(!recieved){
+		return;
+	}
 	if(_fri_inst->getQuality()<2){
 	    return;
 	}
@@ -358,6 +367,10 @@ void KinematicChain::getCommand() {
 }
 
 void KinematicChain::move() {
+	if(!recieved){
+		_fri_inst->doSendData();
+		return;
+	}
 if(_fri_inst->getQuality()<2){
 	    RTT::log(RTT::Info) << _fri_inst->doSendData()<< ":low qual sending"<<RTT::endlog();
 	    return;
@@ -397,7 +410,13 @@ if(_fri_inst->getQuality()<2){
 			for (unsigned int i = 0; i < joint_scoped_names.size(); ++i) {
 				_joint_trq(joint_scoped_names[i]) =
 						torque_controller->joint_cmd.torques(i);
+				if(!include_gravity){
+					//RTT::log(RTT::Warning) << "NO GRAVITY!!!!" << RTT::endlog();
+					_joint_trq(joint_scoped_names[i]) -=_fri_inst->getMsrBuf().data.gravity[joint_scoped_names[i]];
+				}
+				// std::cout<<"("<<_fri_inst->getMsrBuf().data.gravity[joint_scoped_names[i]]<<","<<joint_scoped_names[i]<<"), ";
 			}
+			// std::cout<<"\n\n";
 			_fri_inst->doJntImpedanceControl(_fri_inst->getMsrMsrJntPosition(),
 					zero_vector, zero_vector, _joint_trq.data(), false);
 //}
@@ -416,6 +435,11 @@ if(_fri_inst->getQuality()<2){
 						impedance_controller->joint_cmd.damping(i);
 				_joint_trq(joint_scoped_names[i]) =
 						torque_controller->joint_cmd.torques(i);
+
+						if(!include_gravity){
+
+							_joint_trq(joint_scoped_names[i]) -=_fri_inst->getMsrBuf().data.gravity[joint_scoped_names[i]];
+						}
 			}
 			_fri_inst->doJntImpedanceControl(_joint_pos.data(),
 					_joint_stiff.data(), _joint_damp.data(), _joint_trq.data(),
@@ -483,4 +507,7 @@ bool KinematicChain::initKRC() {
 	 _fri_inst->doSendData();
 	 }*/
 	return true;
+}
+void KinematicChain::setGravity(bool g) {
+	include_gravity=g;
 }

@@ -23,6 +23,9 @@ lwr_robot::lwr_robot(const std::string &name) :
 	this->addOperation("setControlMode", &lwr_robot::setControlMode, this,
 			RTT::ClientThread);
 
+			this->addOperation("setGravity", &lwr_robot::setGravity, this,
+					RTT::ClientThread);
+
 	this->addOperation("getKinematicChains", &lwr_robot::getKinematicChains,
 			this, RTT::ClientThread);
 
@@ -150,6 +153,19 @@ bool lwr_robot::setControlMode(const std::string& kinematic_chain,
 	return kinematic_chains[kinematic_chain]->setControlMode(controlMode);
 }
 
+void lwr_robot::setGravity(const std::string& kinematic_chain,
+		const bool g) {
+	std::vector<std::string> chain_names = getKinematicChains();
+	if (!(std::find(chain_names.begin(), chain_names.end(), kinematic_chain)
+			!= chain_names.end())) {
+		log(Warning) << "Kinematic Chain " << kinematic_chain
+				<< " is not available!" << endlog();
+		// return false;
+	}
+
+	kinematic_chains[kinematic_chain]->setGravity(g);
+}
+
 bool lwr_robot::getModel(const std::string& model_name) {
 	if (model) {
 		log(Warning) << "Model [" << model_name << "] already loaded !"
@@ -253,4 +269,3 @@ RTT::log(RTT::Info) << "MODEL LOADED"
 }
 
 ORO_CREATE_COMPONENT_LIBRARY()ORO_LIST_COMPONENT_TYPE(cogimon::lwr_robot)
-

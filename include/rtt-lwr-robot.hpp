@@ -48,10 +48,11 @@ protected:
     std::vector<std::string> getControlAvailableMode(const std::string& kinematic_chain);
     std::string printKinematicChainInformation(const std::string& kinematic_chain);
     boost::shared_ptr<urdf::ModelInterface const> model;
-    
+
     bool loadURDFAndSRDF(const std::string& URDF_path, const std::string& SRDF_path);
     std::map<std::string, std::vector<std::string> > getKinematiChainsAndJoints();
     bool resetModelConfiguration();
+    void setGravity(const std::string& kinematic_chain,const bool g);
 
 
     /**
