@@ -120,6 +120,7 @@ $ACT_TOOL = 5
     ;ENDFOLD (Initialization of the variables for the FRI)
 ;ENDFOLD (Initialization)
 
+halt
 ;configure the ipadress of the host computer
 RETURN_VALUE = friSetup("192.168.0.51",49939,49939)
 
