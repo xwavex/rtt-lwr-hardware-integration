@@ -7,7 +7,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -g -Wall -O3 -fPIC -DHAVE_SOC
 
 
 
-find_package(OROCOS-RTT REQUIRED COMPONENTS rtt-scripting rtt-transport-corba rtt-typekit)
+find_package(OROCOS-RTT REQUIRED COMPONENTS rtt-scripting rtt-typekit)
 if (NOT OROCOS-RTT_FOUND)
   message (FATAL_ERROR "\nCould not find Orocos-RTT. Please use the shell command\n 'source orocos_toolchain/env.sh' and then run cmake again.")
 endif()
@@ -119,7 +119,6 @@ target_link_libraries(lwr_fri
   ${orocos_kdl_LIBRARIES} 
   ${OROCOS-RTT_LIBRARIES}
   ${OROCOS-RTT_RTT-SCRIPTING_LIBRARY} 
-  ${OROCOS-RTT_RTT-TRANSPORT-CORBA_LIBRARY}
   ${OROCOS-RTT_TYPEKIT_LIBRARIES}
   ${USE_OROCOS_LIBRARIES}
   ${Boost_LIBRARIES}

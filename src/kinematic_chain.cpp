@@ -270,13 +270,14 @@ bool KinematicChain::setControlMode(const std::string &controlMode) {
 }
 
 void KinematicChain::sense() {
-
+	
 	//recieve data from fri
 	int r = _fri_inst->doReceiveData();
 recieved = (r>=0);
 	if(!recieved){
 		return;
 	}
+	//RTT::log(RTT::Info) << "DEBUG2"<<RTT::endlog();
 	//RTT::log(RTT::Info) << _fri_inst->doReceiveData()<< ":RECIEVING"<<RTT::endlog();
 //RTT::log(RTT::Info) <<_fri_inst->getQuality() <<" QUALITY"<<RTT::endlog();
 	//set mode command to zero so fri does not continue if it is being executed again (possibly move to component stop method)
@@ -305,6 +306,7 @@ recieved = (r>=0);
 
 		//return;
 	}
+//RTT::log(RTT::Info) << "DEBUG3"<<RTT::endlog();
 	if (full_feedback) {
 		//RTT::log(RTT::Info) << "FEEDBACK RECEIVING"<<_kinematic_chain_name<< RTT::endlog();
 		time_now = RTT::os::TimeService::Instance()->getNSecs();
@@ -314,20 +316,23 @@ recieved = (r>=0);
 					_fri_inst->getMsrMsrJntPosition()[i];
 
 		//TODO calculate velocity feedback! Easy way first, maybe Kalman afterwards?
-
+		//RTT::log(RTT::Info) << "DEBUG4 "<<_number_of_dofs<<RTT::endlog();
 		for (unsigned int i = 0; i < _number_of_dofs; ++i) {
 			full_feedback->joint_feedback.velocities(i) =
-					(_fri_inst->getMsrMsrJntPosition()[i] - _last_pos[i])
+					(full_feedback->joint_feedback.angles(i) - _last_pos[i])
 							/ _fri_inst->getMsrBuf().intf.desiredMsrSampleTime;//((time_now - last_time)*1E-9);
-			_last_pos[i] = _fri_inst->getMsrMsrJntPosition()[i];
+			//RTT::log(RTT::Info)<<"LASTPOS: "<<i<<","<<_last_pos[i]<<", "<<full_feedback->joint_feedback.angles(i)<<RTT::endlog();
+			_last_pos[i] = full_feedback->joint_feedback.angles(i);
+//RTT::log(RTT::Info)<<_fri_inst->getMsrBuf().intf.desiredMsrSampleTime << ", "<<_last_pos[i]<<", "<<full_feedback->joint_feedback.angles(i)<<RTT::endlog();
 		}
+		//RTT::log(RTT::Info) << "DEBUG8 "<<_number_of_dofs<<RTT::endlog();
 		//get the current torques
 		for (unsigned int i = 0; i < _number_of_dofs; ++i) {
-			// full_feedback->joint_feedback.torques(i) =
-			// 		_fri_inst->getMsrJntTrq()[i];
-			full_feedback->joint_feedback.torques(i) =_fri_inst->getMsrBuf().data.gravity[i];
+			full_feedback->joint_feedback.torques(i) =
+			 		_fri_inst->getMsrJntTrq()[i];
+			//full_feedback->joint_feedback.torques(i) =_fri_inst->getMsrBuf().data.gravity[i];
 		}
-
+//RTT::log(RTT::Info) << "DEBUG9 "<<_number_of_dofs<<RTT::endlog();
 		output_M_port.write(Eigen::Map<Eigen::Matrix<float,7,7>>(_fri_inst->getMsrBuf().data.massMatrix));
 		estExtTorques.torques = Eigen::Map<Eigen::VectorXf>(_fri_inst->getMsrBuf().data.estExtJntTrq,7,1);
 		estExtTorques_port.write(estExtTorques);
@@ -375,6 +380,7 @@ if(_fri_inst->getQuality()<2){
 	    RTT::log(RTT::Info) << _fri_inst->doSendData()<< ":low qual sending"<<RTT::endlog();
 	    return;
 	}
+//RTT::log(RTT::Info) << "DEBUG1: "<<_fri_inst->getFrmKRLInt(15) <<", "<< (_current_control_mode == ControlModes::JointTorqueCtrl) <<", "<< (_fri_inst->getCurrentControlScheme()==FRI_CTRL_JNT_IMP)<<RTT::endlog();
 	/*if(_fri_inst->getQuality()!= FRI_QUALITY::FRI_QUALITY_PERFECT){
 
 	 return;
@@ -417,8 +423,12 @@ if(_fri_inst->getQuality()<2){
 				// std::cout<<"("<<_fri_inst->getMsrBuf().data.gravity[joint_scoped_names[i]]<<","<<joint_scoped_names[i]<<"), ";
 			}
 			// std::cout<<"\n\n";
+			//RTT::log(RTT::Info) << "TRQ:" <<_joint_trq<< RTT::endlog();
+			if(torque_controller->joint_cmd_fs!=RTT::NoData){
+			
 			_fri_inst->doJntImpedanceControl(_fri_inst->getMsrMsrJntPosition(),
 					zero_vector, zero_vector, _joint_trq.data(), false);
+			}
 //}
 		} else if (_current_control_mode == ControlModes::JointImpedanceCtrl) {
 //if(_fri_inst->getCurrentControlScheme()
@@ -441,12 +451,16 @@ if(_fri_inst->getQuality()<2){
 							_joint_trq(joint_scoped_names[i]) -=_fri_inst->getMsrBuf().data.gravity[joint_scoped_names[i]];
 						}
 			}
+			if(torque_controller->joint_cmd_fs!=RTT::NoData){
+			//RTT::log(RTT::Info) << "TRQ:" <<_joint_trq<< RTT::endlog();
 			_fri_inst->doJntImpedanceControl(_joint_pos.data(),
 					_joint_stiff.data(), _joint_damp.data(), _joint_trq.data(),
 					false);
+			}
 //}
 		}
 	} else {
+		//RTT::log(RTT::Info) << "DEBUG7"<<RTT::endlog();
 		//if not in command mode run keep the jntPosition updated, required by FRI
 		for (int i = 0; i < LBR_MNJ; i++) {
 			_fri_inst->getCmdBuf().cmd.jntPos[i] =
