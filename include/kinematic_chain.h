@@ -42,6 +42,7 @@ public:
     void sense();
     void getCommand();
     void move();
+void stop();
     std::string printKinematicChainInformation();
     std::vector<RTT::base::PortInterface*> getAssociatedPorts();
 

@@ -36,6 +36,7 @@ public:
     lwr_robot(std::string const& name);
     bool configureHook();
     void updateHook();
+    void stopHook();
     void WorldUpdateBegin();
     void WorldUpdateEnd();
     virtual ~lwr_robot() {}
@@ -54,6 +55,8 @@ protected:
     bool resetModelConfiguration();
     void setGravity(const std::string& kinematic_chain,const bool g);
 
+    bool addChain(std::string name, std::string robot_ip, int robot_port, const std::string& URDF_path, const std::string& SRDF_path); 
+    
 
     /**
      * Provides the joint name to index mapping for other components to retrieve.

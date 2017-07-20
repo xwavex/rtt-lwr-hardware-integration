@@ -29,3 +29,10 @@ for(it = kinematic_chains.begin(); it != kinematic_chains.end(); it++)
 
    //RTT::log(RTT::Info) << "Done!" << RTT::endlog();
 }
+
+void lwr_robot::stopHook() {
+
+for(it = kinematic_chains.begin(); it != kinematic_chains.end(); it++)
+        it->second->stop();
+}
+

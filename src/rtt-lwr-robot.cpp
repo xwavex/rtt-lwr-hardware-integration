@@ -43,7 +43,7 @@ lwr_robot::lwr_robot(const std::string &name) :
 
 	this->addOperation("reset_model_configuration",
 			&lwr_robot::resetModelConfiguration, this, RTT::ClientThread);
-
+	this->addOperation("addChain", &lwr_robot::addChain,this,RTT::ClientThread);
 	//assign ip address of this computer
 	this->ip_addr = "192.168.0.1";
 	addProperty("ip_addr", ip_addr).doc("IP address of the computer");
@@ -136,7 +136,9 @@ std::vector<std::string> lwr_robot::getKinematicChains() {
 	std::vector<std::string> chains;
 	for (std::map<std::string, boost::shared_ptr<KinematicChain>>::iterator it =
 			kinematic_chains.begin(); it != kinematic_chains.end(); it++)
-		chains.push_back(it->second->getKinematicChainName());
+		chains.push_back(it->first);
+
+	//second->getKinematicChainName()
 	return chains;
 }
 
@@ -193,7 +195,7 @@ bool lwr_robot::configureHook() {
 	RTT::log(RTT::Info) << "Model has " << urdf_links_.size() << " links"
 			<< RTT::endlog();
 
-	for (unsigned int i = 0; i < _xbotcore_model.get_chain_names().size();
+/*	for (unsigned int i = 0; i < _xbotcore_model.get_chain_names().size();
 			++i) {
 
 		std::string chain_name = _xbotcore_model.get_chain_names()[i];
@@ -217,7 +219,7 @@ bool lwr_robot::configureHook() {
 RTT::log(RTT::Info) << "IP: " << ip_addr<< RTT::endlog();
 RTT::log(RTT::Info) << "IP2: " << temp.hardware_info_.address_<< RTT::endlog();
 
-	}
+	}*/
 
 	RTT::log(RTT::Info) << "Kinematic Chains map created!" << kinematic_chains.size()<< RTT::endlog();
 
@@ -266,6 +268,31 @@ bool lwr_robot::loadURDFAndSRDF(const std::string &URDF_path,
 RTT::log(RTT::Info) << "MODEL LOADED"
 				<< RTT::endlog();
 	return _models_loaded;
+}
+
+bool lwr_robot::addChain(std::string name, std::string robot_ip, int robot_port, const std::string& URDF_path, const std::string& SRDF_path){
+	loadURDFAndSRDF(URDF_path,SRDF_path);
+	std::string chain_name = _xbotcore_model.get_chain_names()[0];
+		RTT::log(RTT::Info) << name << " :chain" << RTT::endlog();
+		std::vector<std::string> enabled_joints_in_chain;
+		_xbotcore_model.get_enabled_joints_in_chain(chain_name,
+				enabled_joints_in_chain);
+		//srdf_advr::Model::RTTGazebo temp = _xbotcore_model.getRTTGazebo(chain_name);
+		kinematic_chains.insert(
+				std::pair<std::string, boost::shared_ptr<KinematicChain>>(
+						name,
+						boost::shared_ptr<KinematicChain>(
+								new KinematicChain(chain_name,
+										enabled_joints_in_chain,
+										*(this->ports()),
+										new friRemote(robot_port,
+												robot_ip.c_str(),
+												ip_addr.c_str(),
+												this->getActivity()->thread()->getTask())))));
+	RTT::log(RTT::Info) << "PORTNO: " << robot_port<< RTT::endlog();
+RTT::log(RTT::Info) << "IP: " << ip_addr<< RTT::endlog();
+RTT::log(RTT::Info) << "IP2_ROBOT: " << robot_ip<< RTT::endlog();
+return true;
 }
 
 ORO_CREATE_COMPONENT_LIBRARY()ORO_LIST_COMPONENT_TYPE(cogimon::lwr_robot)

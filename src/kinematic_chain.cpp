@@ -371,6 +371,34 @@ void KinematicChain::getCommand() {
 	}
 }
 
+void KinematicChain::stop(){
+	if (_current_control_mode == ControlModes::JointPositionCtrl) {
+
+	}
+	else if (_current_control_mode == ControlModes::JointTorqueCtrl){
+	std::vector<int> joint_scoped_names = getJointScopedNames();
+	for (unsigned int i = 0; i < joint_scoped_names.size(); ++i) {
+		_joint_trq(joint_scoped_names[i]) =0;
+		zero_vector[joint_scoped_names[i]]=0.4;
+	}
+		_fri_inst->doJntImpedanceControl(_fri_inst->getMsrMsrJntPosition(),
+					zero_vector, zero_vector, _joint_trq.data(), true);
+	}
+	int r = 0;
+	//while(_fri_inst->getFrmKRLInt(15) != 10 &&  (r>=0)){
+	while(r<100){
+		_fri_inst->setToKRLInt(15, 20);
+		_fri_inst->doDataExchange();
+		r++;
+		RTT::log(RTT::Critical) << r<< ":stopping"<<RTT::endlog();
+	}
+	_fri_inst->setToKRLInt(15, 0);
+	_fri_inst->doDataExchange();
+	_fri_inst->doDataExchange();
+	_fri_inst->doDataExchange();
+} 
+
+
 void KinematicChain::move() {
 	if(!recieved){
 		_fri_inst->doSendData();
