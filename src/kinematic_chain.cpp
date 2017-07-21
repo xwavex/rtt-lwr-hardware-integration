@@ -386,7 +386,7 @@ void KinematicChain::stop(){
 	}
 	int r = 0;
 	//while(_fri_inst->getFrmKRLInt(15) != 10 &&  (r>=0)){
-	while(r<100){
+	while(r<20){
 		_fri_inst->setToKRLInt(15, 20);
 		_fri_inst->doDataExchange();
 		r++;
