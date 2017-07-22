@@ -40,6 +40,15 @@ KinematicChain::KinematicChain(const std::string& chain_name,
 	output_M_port.setDataSample(output_M_var);
 	_ports.addPort(output_M_port);
 	include_gravity=true;
+
+	gravity_torques = rstrt::dynamics::JointTorques(_joint_names.size());
+        gravity_torques.torques.setZero();
+        gravity_port.setName("out_gravity_port");
+	gravity_port.setDataSample(gravity_torques);
+        _ports.addPort(gravity_port);
+
+	debug = false;
+	
 }
 
 std::vector<RTT::base::PortInterface*> KinematicChain::getAssociatedPorts() {
@@ -336,6 +345,8 @@ recieved = (r>=0);
 		output_M_port.write(Eigen::Map<Eigen::Matrix<float,7,7>>(_fri_inst->getMsrBuf().data.massMatrix));
 		estExtTorques.torques = Eigen::Map<Eigen::VectorXf>(_fri_inst->getMsrBuf().data.estExtJntTrq,7,1);
 		estExtTorques_port.write(estExtTorques);
+                gravity_torques.torques = Eigen::Map<Eigen::VectorXf>(_fri_inst->getMsrBuf().data.gravity,7,1);
+		gravity_port.write(gravity_torques);
 		if (full_feedback->orocos_port.connected())
 			full_feedback->orocos_port.write(full_feedback->joint_feedback);
 		last_time = time_now;
@@ -452,6 +463,10 @@ if(_fri_inst->getQuality()<2){
 			}
 			// std::cout<<"\n\n";
 			//RTT::log(RTT::Info) << "TRQ:" <<_joint_trq<< RTT::endlog();
+                        //RTT::log(RTT::Critical)<<"Joint Torques: "<<_joint_trq.transpose()<<RTT::endlog();
+			if(debug){
+			_joint_trq.setZero();
+			}	
 			if(torque_controller->joint_cmd_fs!=RTT::NoData){
 			
 			_fri_inst->doJntImpedanceControl(_fri_inst->getMsrMsrJntPosition(),
@@ -479,6 +494,8 @@ if(_fri_inst->getQuality()<2){
 							_joint_trq(joint_scoped_names[i]) -=_fri_inst->getMsrBuf().data.gravity[joint_scoped_names[i]];
 						}
 			}
+			
+			
 			if(torque_controller->joint_cmd_fs!=RTT::NoData){
 			//RTT::log(RTT::Info) << "TRQ:" <<_joint_trq<< RTT::endlog();
 			_fri_inst->doJntImpedanceControl(_joint_pos.data(),
@@ -552,4 +569,8 @@ bool KinematicChain::initKRC() {
 }
 void KinematicChain::setGravity(bool g) {
 	include_gravity=g;
+}
+
+void KinematicChain::setDebug(bool g) {
+	debug=g;
 }

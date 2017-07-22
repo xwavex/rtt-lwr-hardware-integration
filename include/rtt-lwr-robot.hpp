@@ -54,6 +54,7 @@ protected:
     std::map<std::string, std::vector<std::string> > getKinematiChainsAndJoints();
     bool resetModelConfiguration();
     void setGravity(const std::string& kinematic_chain,const bool g);
+    void setDebug(const std::string& kinematic_chain,const bool g);
 
     bool addChain(std::string name, std::string robot_ip, int robot_port, const std::string& URDF_path, const std::string& SRDF_path); 
     

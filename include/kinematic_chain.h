@@ -46,15 +46,20 @@ void stop();
     std::string printKinematicChainInformation();
     std::vector<RTT::base::PortInterface*> getAssociatedPorts();
 
-    bool recieved;
+    bool recieved, debug;
 
     boost::shared_ptr<position_ctrl> position_controller;
     boost::shared_ptr<impedance_ctrl> impedance_controller;
     boost::shared_ptr<torque_ctrl> torque_controller;
 
     boost::shared_ptr<full_fbk> full_feedback;
-
+    
+    // When false Gravity is removed from kuka
+    // when true kuka compensates itself
     void setGravity(bool g);
+
+    // if true zeros all output torques (grav comp mode)
+    void setDebug(bool g);
 private:
 
     RTT::nsecs time_now, last_time;
@@ -92,6 +97,8 @@ private:
     void setInitialPosition(const bool use_model);
     void setInitialImpedance();
 
+    RTT::OutputPort<rstrt::dynamics::JointTorques> gravity_port;
+    rstrt::dynamics::JointTorques gravity_torques;
 };
 
 
