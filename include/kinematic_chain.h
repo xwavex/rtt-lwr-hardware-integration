@@ -17,7 +17,10 @@ using namespace rstrt::kinematics;
 using namespace rstrt::dynamics;
 using namespace rstrt::robot;
 
-
+/**
+ * Hardcoded Ports.
+ * TODO generate based on output of xbotcoremodel.
+ */
 typedef cogimon::jointCtrl<JointAngles> position_ctrl;
 typedef cogimon::jointCtrl<JointImpedance> impedance_ctrl;
 typedef cogimon::jointCtrl<JointTorques> torque_ctrl;
@@ -27,8 +30,19 @@ typedef cogimon::jointFeedback<JointState> full_fbk;
 
 class KinematicChain {
 public:
-    KinematicChain(const std::string& chain_name, const std::vector<std::string> &joint_names,
-                   RTT::DataFlowInterface& , friRemote* friInst);
+    /**
+     * Contructor to set up a kinematic chain.
+     * 
+     * @param chain_name name of the chain.
+     * @param joint_names list o joint names.
+     * @param ports pointer to the ports of the enclosing component.
+     * @param friInst remote interface of FRI.
+     */
+    KinematicChain(const std::string& chain_name,
+                   const std::vector<std::string> &joint_names,
+                   RTT::DataFlowInterface& ports,
+                   friRemote* friInst);
+
     ~KinematicChain(){}
 
     std::string getKinematicChainName();
@@ -39,10 +53,11 @@ public:
     bool initKinematicChain();
     bool resetKinematicChain();
     bool setControlMode(const std::string& controlMode);
-    void sense();
+    bool sense();
     void getCommand();
     void move();
-void stop();
+    void stop();
+
     std::string printKinematicChainInformation();
     std::vector<RTT::base::PortInterface*> getAssociatedPorts();
 
@@ -60,6 +75,10 @@ void stop();
 
     // if true zeros all output torques (grav comp mode)
     void setDebug(bool g);
+    
+    // set the fake impedance for debugging.
+    void setTrqFakeImpedance(rstrt::dynamics::JointImpedance imp);
+    
 private:
 
     RTT::nsecs time_now, last_time;
@@ -72,7 +91,8 @@ private:
 
     //gazebo::physics::ModelPtr _model;
     friRemote* _fri_inst;
-    float* _last_pos, * zero_vector;
+    float* _last_pos;
+    float* zero_vector;
     FRI_QUALITY last_quality;
     std::string _krc_ip;
     std::string _current_control_mode;
@@ -86,7 +106,12 @@ private:
     Eigen::Matrix<float,7,7> output_M_var;
     bool include_gravity;
 
-	std::vector<double> _initial_joints_configuration;
+    // torque mode joint impedance port
+    RTT::InputPort<rstrt::dynamics::JointImpedance> in_trqModeJntImpedance_port;
+    RTT::FlowStatus in_trqModeJntImpedance_flow;
+    rstrt::dynamics::JointImpedance trqModeJntImpedance;
+
+	std::vector<double> _initial_joints_configuration; /**< Vector that hold the initial joint angles. */
 
     bool setController(const std::string& controller_type);
     void setFeedBack();
@@ -100,7 +125,5 @@ private:
     RTT::OutputPort<rstrt::dynamics::JointTorques> gravity_port;
     rstrt::dynamics::JointTorques gravity_torques;
 };
-
-
 
 #endif

@@ -97,7 +97,7 @@ void friUdp::Init(const char * remoteHost, const char * serverHost) {
 	// make the socket non blocking after a specific amount of nanoseconds
 	//int64_t tout = 5 * 20000000000;
 	//handle latency spikes or message offset of 1msec
-	int64_t tout = 100000;//0.1msec
+	int64_t tout = 100000;	//0.1msec
 	// 0.5 milliseconds
 	//int64_t tout = 1*10000;
 	// let socket immidiately return
@@ -166,8 +166,8 @@ void friUdp::Init(const char * remoteHost, const char * serverHost) {
 		krcAddr.sin_family = AF_INET;
 		krcAddr.sin_port = htons(49939);
 		printf("port %d %d\n", 49939, htons(49939));
-		printf("preinitialized remote host to %s and port %d\n",
-				remoteHost, htons(49939));
+		printf("preinitialized remote host to %s and port %d\n", remoteHost,
+				htons(49939));
 	}
 #ifdef HAVE_GETHOSTNAME
 	/* get IP(s) and port number and display them (just for
@@ -180,8 +180,7 @@ void friUdp::Init(const char * remoteHost, const char * serverHost) {
 		gethostname(hostname, sizeof(hostname));
 		host = gethostbyname(hostname);
 		//host = gethostbyname("192.168.0.100");
-		for (i=0; host->h_addr_list[i]!=0; i++)
-		{
+		for (i = 0; host->h_addr_list[i] != 0; i++) {
 			struct in_addr addr;
 			memcpy(&addr, host->h_addr_list[i], sizeof(addr));
 			printf("IP %s - Port %d\n", inet_ntoa(addr), serverPort);
@@ -239,7 +238,7 @@ int friUdp::Send(tFriCmdData *data) {
 				(struct sockaddr*) &krcAddr, sizeof(krcAddr));
 #else
 		size = sendto(udp_socket_, (char *) data, sizeof(tFriCmdData), 0,
-		                      (struct sockaddr *)&krcAddr, sizeof(krcAddr));
+				(struct sockaddr *) &krcAddr, sizeof(krcAddr));
 #endif
 		if (size == sizeof(tFriCmdData)) {
 			return 0;
@@ -349,8 +348,8 @@ int friUdp::RecvPacket(int udp_socket, tFriMsrData* data, struct timeval* ts,
 		size = rt_dev_recvfrom(udp_socket, (char *) data, sizeof(tFriMsrData),
 				0, (struct sockaddr *) client, &sockAddrSize);
 #else
-		size = recvfrom(udp_socket, (char *) data, sizeof(tFriMsrData),
-						0, (struct sockaddr *) client, (unsigned int *) &sockAddrSize);
+		size = recvfrom(udp_socket, (char *) data, sizeof(tFriMsrData), 0,
+				(struct sockaddr *) client, (unsigned int *) &sockAddrSize);
 #endif
 		if (size < 0) {
 			//return -1;

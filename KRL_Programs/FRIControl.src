@@ -19,8 +19,8 @@ DEF fricontrol( )
     ; 
     ; Author: Torsten Kroeger, tkr@stanford.edu
     ;
-    ; Latest update: November 19, 2011
-    ; Adapted by: Joshua Smith
+    ; Latest update: December 12, 2017
+    ; Adapted by: Joshua Smith, Dennis Leroy Wigand
     ;=====================================
 ;ENDFOLD (Program information)
 
@@ -84,9 +84,10 @@ $ACT_TOOL = 5
         ; This part is required to perform a "BCO run".
         ; A BCO run is required to enable the automatic mode.
         $H_POS=XHOME
-		;close fri
+		;Close and stop the communication in case it is open
 		RETURN_VALUE=fristop()
 		RETURN_VALUE=friclose()
+        ; Stay at the same position
         PTP $AXIS_ACT_MES
     ;ENDFOLD
 
@@ -99,13 +100,14 @@ $ACT_TOOL = 5
         $ACT_BASE = 0
         $BASE = $NULLFRAME
 
+        ;Reset FRI values
         FOR I = 1 TO 16
             $FRI_TO_INT[i]    = 0
             $FRI_TO_REA[i]    = 0.0
         ENDFOR
 
+        ;Init the abort condition
         $FRI_TO_INT[15] = 30
-
         IF ($FRI_FRM_INT[16] == 30) THEN
             $FRI_TO_INT[15] = 40
         ELSE
@@ -128,25 +130,30 @@ RETURN_VALUE = friSetup("192.168.0.51",49939,49939)
 RETURN_VALUE = friOpen(1)
 
 ;FOLD Screen output
-    $MSG_T={MSG_T: VALID FALSE, RELEASE FALSE, TYP #NOTIFY, MODUL[] " ", KEY[] " ", PARAM_TYP #VALUE, PARAM[] " ", DLG_FORMAT[] " ", ANSWER 0} 
-    $MSG_T.MODUL[]="FRI-Ctrl"
-    IF (RETURN_VALUE == #MON) THEN
-        $MSG_T.KEY[] = "FRI successfully opened."
-    ELSE
-        STRING_OFFSET = 0
-        SWRITE($MSG_T.KEY[], STATE, STRING_OFFSET, "ERROR during friOpen (result: %d)", RETURN_VALUE)
-    ENDIF
-    $MSG_T.VALID=TRUE
-    WAIT FOR ($MSG_T.VALID == FALSE)
+    ;$MSG_T={MSG_T: VALID FALSE, RELEASE FALSE, TYP #NOTIFY, MODUL[] " ", KEY[] " ", PARAM_TYP #VALUE, PARAM[] " ", DLG_FORMAT[] " ", ANSWER 0} 
+    ;$MSG_T.MODUL[]="FRI-Ctrl"
+    ;IF (RETURN_VALUE == #MON) THEN
+    ;    $MSG_T.KEY[] = "FRI successfully opened."
+    ;ELSE
+    ;    STRING_OFFSET = 0
+    ;    SWRITE($MSG_T.KEY[], STATE, STRING_OFFSET, "ERROR during friOpen (result: %d)", RETURN_VALUE)
+    ;ENDIF
+    ;$MSG_T.VALID=TRUE
+    ;WAIT FOR ($MSG_T.VALID == FALSE)
+    ;WAIT SEC 0.3
+    WAIT FOR ($FriState == #MON)
+    $MSG_T.KEY[] = "FRI successfully opened."
+    $MSG_T.VALID = TRUE
     WAIT SEC 0.3
 ;ENDFOLD (Screen output)
 
-; Signalize to the remote host that the FRI is open
+;Signalize to the remote host that the FRI is open
 $FRI_TO_INT[16] = 10
 
-wait for ($FriQuality==#PERFECT)
+;wait for ($FriQuality==#PERFECT)
 REPEAT
 
+    ;If friStart() should be called and it wasn't called before.
     IF ($FRI_FRM_INT[16] == 10) AND ($FRI_TO_INT[16] <> 20) THEN
         
         ;FOLD Setting up $STIFFNESS
@@ -165,31 +172,24 @@ REPEAT
         ; Set up the current control scheme
         $stiffness.strategy = $FRI_FRM_INT[15]
         $stiffness.commit = true
-        
-        ;FOLD Screen output
-            $MSG_T={MSG_T: VALID FALSE, RELEASE FALSE, TYP #NOTIFY, MODUL[] " ", KEY[] " ", PARAM_TYP #VALUE, PARAM[] " ", DLG_FORMAT[] " ", ANSWER 0}
-            $MSG_T.MODUL[]="FRI-Ctrl"
-            IF ($stiffness.strategy == 10) THEN
-                $MSG_T.KEY[] = "Control scheme: joint position control."
-            ELSE
-                IF($stiffness.strategy == 20) THEN
-                    $MSG_T.KEY[] = "Control scheme: Cart. impedance control."
-                ELSE
-                    IF ($stiffness.strategy == 30) THEN
-                        $MSG_T.KEY[] = "Control scheme: switching to joint impedance control."
-                    ELSE
-                        $MSG_T.KEY[] = "ERROR: Unknown control scheme."
-                    ENDIF
-                ENDIF
-            ENDIF
-            $MSG_T.VALID=TRUE
-            WAIT FOR ($MSG_T.VALID == FALSE)
-            WAIT SEC 0.3
-        ;ENDFOLD (Screen output)        
-    
-        ; Apply a safety value of 1.0 and start the FRI
 
+        ;FOLD Screen output
+            $MSG_T.KEY[] = "Starting FRI..."
+            $MSG_T.VALID = TRUE
+            WAIT SEC 0.5
+        ;ENDFOLD (Screen output)
+    
+        ;Please, start the Orocos FRI component.
+        WAIT FOR ($FriQuality == #PERFECT)
+
+        ;Apply a safety value of 1.0 and start the FRI
         RETURN_VALUE = friStart(1.0)
+
+        ;Wait until we are really in command mode
+        WAIT FOR ($FriState == #CMD)
+
+        ; Signalize to the remote host that friStart was called
+        $FRI_TO_INT[16] = 20
         
         ;FOLD Screen output
             $MSG_T={MSG_T: VALID FALSE, RELEASE FALSE, TYP #NOTIFY, MODUL[] " ", KEY[] " ", PARAM_TYP #VALUE, PARAM[] " ", DLG_FORMAT[] " ", ANSWER 0} 
@@ -202,17 +202,40 @@ REPEAT
             ENDIF
             $MSG_T.VALID=TRUE
             WAIT FOR ($MSG_T.VALID == FALSE)
-            WAIT SEC 0.3
+            WAIT SEC 0.5
         ;ENDFOLD (Screen output)
 
-        ; Signalize to the remote host that friStart was called
-        $FRI_TO_INT[16] = 20
-        
+        ;FOLD Screen output
+            IF ($stiffness.strategy == 10) THEN
+                $MSG_T.KEY[] = "ControlStrategy changed to 10 JOINT_POSITION"
+            ELSE
+                IF($stiffness.strategy == 20) THEN
+                $MSG_T.KEY[] = "ControlStrategy changed to 20 CARTESIAN_IMPEDANCE"
+                ELSE
+                IF ($stiffness.strategy == 30) THEN
+                    $MSG_T.KEY[] = "ControlStrategy changed to 30 JOINT_IMPEDANCE"
+                ELSE
+                    $MSG_T.KEY[] = "ERROR: Unknown ControlStrategy."
+                ENDIF
+                ENDIF
+            ENDIF
+            $MSG_T.VALID = TRUE
+        ;ENDFOLD (Screen output)
     ENDIF
 
+    ; If via FRI remote we want to call friStop() and we are not in monitor mode. == 20?
     IF ($FRI_FRM_INT[16] == 20) AND ($FRI_TO_INT[16] <> 10) THEN
-  
+        ;FOLD Screen output
+            $MSG_T.KEY[] = "Stopping FRI..."
+            $MSG_T.VALID = TRUE
+            WAIT SEC 0.5
+        ;ENDFOLD (Screen output)
+
         RETURN_VALUE = friStop()
+        ; Signalize to the remote host that the FRI was stopped
+        $FRI_TO_INT[16] = 10
+
+        WAIT FOR ($FriState == #MON)
         
         ;FOLD Screen output
             $MSG_T={MSG_T: VALID FALSE, RELEASE FALSE, TYP #NOTIFY, MODUL[] " ", KEY[] " ", PARAM_TYP #VALUE, PARAM[] " ", DLG_FORMAT[] " ", ANSWER 0} 
@@ -227,22 +250,19 @@ REPEAT
             WAIT FOR ($MSG_T.VALID == FALSE)
             WAIT SEC 0.3
         ;ENDFOLD (Screen output)
-        
-        ; Signalize to the remote host that the FRI was stopped
-        $FRI_TO_INT[16] = 10
-
     ENDIF
 
     ; The Fast Research Interface is activated.
     WAIT SEC 0.05
-    
+
+; Loop until we write the abort value via friRemote.
 UNTIL $FRI_FRM_INT[16] == $FRI_TO_INT[15]
 
-;FOLD For the case, friStop() has not been called, call it here
+;FOLD For the case, friStop() has not been called, call it here. If it is still in command mode.
     IF ($FRI_TO_INT[16] == 20) THEN
         
-         RETURN_VALUE = friStop()        
-        
+        RETURN_VALUE = friStop()        
+
         ;FOLD Screen output
             $MSG_T={MSG_T: VALID FALSE, RELEASE FALSE, TYP #NOTIFY, MODUL[] " ", KEY[] " ", PARAM_TYP #VALUE, PARAM[] " ", DLG_FORMAT[] " ", ANSWER 0} 
             $MSG_T.MODUL[]="FRI-Ctrl"
@@ -254,7 +274,7 @@ UNTIL $FRI_FRM_INT[16] == $FRI_TO_INT[15]
             ENDIF
             $MSG_T.VALID=TRUE
             WAIT FOR ($MSG_T.VALID == FALSE)
-            WAIT SEC 0.3
+            WAIT SEC 0.5
         ;ENDFOLD (Screen output)
         
         ; Signalize to the remote host that the FRI was stopped
@@ -264,7 +284,6 @@ UNTIL $FRI_FRM_INT[16] == $FRI_TO_INT[15]
 ;ENDFOLD (For the case, friStop() has not been called, call it here)
 
 RETURN_VALUE = friClose()
-
 ; Signalize to the remote host that the FRI was closed
 $FRI_TO_INT[16] = 30
 
@@ -279,7 +298,7 @@ $FRI_TO_INT[16] = 30
     ENDIF
     $MSG_T.VALID=TRUE
     WAIT FOR ($MSG_T.VALID == FALSE)
-    WAIT SEC 0.3
+    WAIT SEC 0.5
 ;ENDFOLD (Screen output)
 
 END

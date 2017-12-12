@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(rtt-lwr-hardware-integration)
 
+#set(CMAKE_VERBOSE_MAKEFILE ON)
+
 set(CMAKE_BUILD_TYPE Release)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -g -Wall -O3 -fPIC -DHAVE_SOCKLEN_T")
 #list(APPEND CMAKE_CXX_FLAGS "-std=c++11")
