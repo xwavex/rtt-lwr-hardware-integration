@@ -147,14 +147,14 @@ void lwr_robot::setDebug(const std::string& kinematic_chain, const bool debug) {
 	kinematic_chains[kinematic_chain]->setDebug(debug);
 }
 
-void lwr_robot::setTrqFakeImpedance(const std::string& kinematic_chain, const rstrt::dynamics::JointImpedance imp) {
+void lwr_robot::setTrqFakeImpedance(const std::string& kinematic_chain, const rstrt::dynamics::JointImpedance imp, bool fakeImpedance) {
 	std::vector<std::string> chain_names = getKinematicChains();
 	if (!(std::find(chain_names.begin(), chain_names.end(), kinematic_chain)
 			!= chain_names.end())) {
 		log(Warning) << "Kinematic Chain " << kinematic_chain
 				<< " is not available!" << endlog();
 	}
-	kinematic_chains[kinematic_chain]->setTrqFakeImpedance(imp);
+	kinematic_chains[kinematic_chain]->setTrqFakeImpedance(imp, fakeImpedance);
 }
 
 bool lwr_robot::getModel(const std::string& model_name) {

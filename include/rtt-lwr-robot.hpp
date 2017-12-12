@@ -137,7 +137,7 @@ protected:
      */
     bool addChain(std::string name, std::string robot_ip, int robot_port, const std::string& URDF_path, const std::string& SRDF_path); 
     
-    void setTrqFakeImpedance(const std::string& kinematic_chain, const rstrt::dynamics::JointImpedance imp);
+    void setTrqFakeImpedance(const std::string& kinematic_chain, const rstrt::dynamics::JointImpedance imp, bool fakeImpedance);
 
     /**
      * Provides the joint name to index mapping for other components to retrieve.

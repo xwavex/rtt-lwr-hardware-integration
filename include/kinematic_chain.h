@@ -77,7 +77,7 @@ public:
     void setDebug(bool g);
     
     // set the fake impedance for debugging.
-    void setTrqFakeImpedance(rstrt::dynamics::JointImpedance imp);
+    void setTrqFakeImpedance(rstrt::dynamics::JointImpedance imp, bool fakeImpedance);
     
 private:
 
@@ -121,6 +121,10 @@ private:
     std::vector<int> getJointScopedNames();
     void setInitialPosition(const bool use_model);
     void setInitialImpedance();
+
+    int _friInternalCommandMode;
+
+    bool _overrideFakeImpedance;
 
     RTT::OutputPort<rstrt::dynamics::JointTorques> gravity_port;
     rstrt::dynamics::JointTorques gravity_torques;

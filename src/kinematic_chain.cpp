@@ -9,7 +9,9 @@ KinematicChain::KinematicChain(const std::string& chain_name,
 		                                             _kinematic_chain_name(chain_name),
 													 _ports(ports),
 													 _current_control_mode(std::string(ControlModes::JointPositionCtrl)),
-													 _joint_names(joint_names) {
+													 _joint_names(joint_names),
+													 _friInternalCommandMode(-1),
+													 _overrideFakeImpedance(false) {
 
 	// store pointer for _fri_inst.
 	this->_fri_inst = friInst;
@@ -316,27 +318,44 @@ bool KinematicChain::setControlMode(const std::string &controlMode) {
 }
 
 bool KinematicChain::sense() {
-	//recieve data from fri
+	// get the current time.
+	time_now = RTT::os::TimeService::Instance()->getNSecs();
+
+	// recieve data from fri.
 	int r = _fri_inst->doReceiveData();
+	// just output for information.
+	if (recieved && (r < 0)) {
+		RTT::log(RTT::Warning) << this->getKinematicChainName() << "::sense() didn't receive any data! Skipping!" << RTT::endlog();
+	} else if ((!recieved) && (r >= 0)) {
+		RTT::log(RTT::Info) << this->getKinematicChainName() << "::sense() received data!" << RTT::endlog();
+	}
+
 	recieved = (r >= 0);
 	if (!recieved) {
 		// TODO do we need to handle this case?
 		return false;
 	}
 
-	//RTT::log(RTT::Info) << _fri_inst->doReceiveData()<< ":RECIEVING"<<RTT::endlog();
+    //RTT::log(RTT::Info) << _fri_inst->doReceiveData()<< ":RECIEVING"<<RTT::endlog();
 	//RTT::log(RTT::Info) <<_fri_inst->getQuality() <<" QUALITY"<<RTT::endlog();
 
 	//set mode command to zero so fri does not continue if it is being executed again (possibly move to component stop method)
 	_fri_inst->setToKRLInt(15, 0); // ?
 	if (_fri_inst->getQuality() < 2) {
+		RTT::log(RTT::Critical) << this->getKinematicChainName() << "::sense() bad quality! " << _fri_inst->getQuality() << " < 2 Skipping!" << RTT::endlog();
 		// TODO ALWAYS HANDLE QUALITY AND ACT ACCORDINGLY!
 		return false;
 	}
 	//if not in monitor mode straight return as nothing can be sensed.
 	// TODO DLW do this differently! Only trigger the update function when we are in command mode, or at least send commands only in command mode???
-	if (_fri_inst->getFrmKRLInt(15) < 10) {
-		//RTT::log(RTT::Info) << _fri_inst->getFrmKRLInt(15)<<", "<<_fri_inst->getQuality()<<" :NOTHING BEING SENSED"<<_kinematic_chain_name<< RTT::endlog();
+	int tmpCtrlModeFri = _fri_inst->getFrmKRLInt(15);
+	if (_friInternalCommandMode != tmpCtrlModeFri) {
+		RTT::log(RTT::Info) << this->getKinematicChainName() << "::sense() noticed a control mode update from " << _friInternalCommandMode << " to " << tmpCtrlModeFri << RTT::endlog();
+		_friInternalCommandMode = tmpCtrlModeFri;
+	}
+
+	if (_friInternalCommandMode < 10) {
+		RTT::log(RTT::Warning) << this->getKinematicChainName() << "::sense() not in monitor mode! _fri_inst->getFrmKRLInt(15) = " << _fri_inst->getFrmKRLInt(15) << " Skipping!" << RTT::endlog();
 		return false;
 	}
 	/*if (_fri_inst->getCurrentControlScheme()!=FRI_CTRL_JNT_IMP){
@@ -345,22 +364,30 @@ bool KinematicChain::sense() {
 	 return;
 	 }*/
 
-	// TODO DLW auslagern????
+	// TODO DLW auslagern???? DO THIS DIFFERENTLY AND NOT TRY TO DO THIS EVERY TIME!!!
 	//if in monitor mode command fri to switch to command mode with the correct control mode
-	if (_fri_inst->getFrmKRLInt(15) == 10) {
-		//RTT::log(RTT::Info) <<_fri_inst->getQuality() <<" SWITCHING TO COMMAND MODE"<<_kinematic_chain_name<< RTT::endlog();
+	tmpCtrlModeFri = _fri_inst->getFrmKRLInt(15);
+	if (_friInternalCommandMode != tmpCtrlModeFri) {
+		RTT::log(RTT::Info) << this->getKinematicChainName() << "::sense() noticed a control mode update (on second check) from " << _friInternalCommandMode << " to " << tmpCtrlModeFri << RTT::endlog();
+		_friInternalCommandMode = tmpCtrlModeFri;
+	}
+
+	if (_friInternalCommandMode == 10) {
+		RTT::log(RTT::Warning) << this->getKinematicChainName() << "::sense() switching to COMMAND MODE! Quality: " << _fri_inst->getQuality() << RTT::endlog();
 		if (_fri_inst->getQuality() >= 2) {
+			RTT::log(RTT::Info) << this->getKinematicChainName() << "::sense() Quality is good -> Proceed with switch to COMMAND MODE! " << _fri_inst->getQuality() << RTT::endlog();
+			// request to call friStart() to go into command mode.
 			_fri_inst->setToKRLInt(15, 10);
 			//_fri_inst->doDataExchange();
+		} else {
+			RTT::log(RTT::Critical) << this->getKinematicChainName() << "::sense() bad quality! " << _fri_inst->getQuality() << " < 2 Skipping!" << RTT::endlog();
 		}
-		//setControlMode(_current_control_mode);
-		//return;
 	}
 
 	// should always be true
 	if (full_feedback) {
-		// get the current time.
-		time_now = RTT::os::TimeService::Instance()->getNSecs();
+		// // get the current time.
+		// time_now = RTT::os::TimeService::Instance()->getNSecs();
 
 		//get the current joint positions from fri.
 		for (unsigned int i = 0; i < _number_of_dofs; i++) {
@@ -399,19 +426,30 @@ bool KinematicChain::sense() {
 
 		// set store the last time.
 		last_time = time_now;
+		RTT::log(RTT::Debug) << this->getKinematicChainName() << "::sense() Took " << RTT::os::TimeService::Instance()->secondsSince(time_now) << " seconds." << RTT::endlog();
 	}
 	return true;
 }
 
 void KinematicChain::getCommand() {
+	RTT::nsecs time_start = RTT::os::TimeService::Instance()->getNSecs();
+
 	// TODO if we couldn't receive any feedback, do not read any command!?
 	if (!recieved) {
 		return;
 	}
 
 	// if the quality is bad, do not read a command!?
-	if (_fri_inst->getQuality() < 2) {
+	FRI_QUALITY q = _fri_inst->getQuality();
+	if (q < 2) {
+		RTT::log(RTT::Critical) << this->getKinematicChainName() << "::getCommand() bad quality! " << q << " < 2 Skipping!" << RTT::endlog();
 		return;
+	}
+
+	int tmpCtrlModeFri = _fri_inst->getFrmKRLInt(15);
+	if (_friInternalCommandMode != tmpCtrlModeFri) {
+		RTT::log(RTT::Info) << this->getKinematicChainName() << "::getCommand() noticed a control mode update from " << _friInternalCommandMode << " to " << tmpCtrlModeFri << RTT::endlog();
+		_friInternalCommandMode = tmpCtrlModeFri;
 	}
 
 	// read newest command from the ports?!
@@ -436,6 +474,7 @@ void KinematicChain::getCommand() {
 				torque_controller->orocos_port.readNewest(
 						torque_controller->joint_cmd);
 	}
+	RTT::log(RTT::Debug) << this->getKinematicChainName() << "::getCommand() Took " << RTT::os::TimeService::Instance()->secondsSince(time_start) << " seconds." << RTT::endlog();
 }
 
 void KinematicChain::stop() {
@@ -468,26 +507,40 @@ void KinematicChain::stop() {
 }
 
 void KinematicChain::move() {
-	// TODO only send a command if we also received something?!
-	if (!recieved) {
-		_fri_inst->doSendData();
-		return;//Strange????
-	}
+	RTT::nsecs time_start = RTT::os::TimeService::Instance()->getNSecs();
 
-	// TODO only send a command if the quality is still good?!
-	if (_fri_inst->getQuality() < 2) {
-		RTT::log(RTT::Info) << _fri_inst->doSendData() << ":low qual sending" << RTT::endlog();
-		return;
+	int tmpCtrlModeFri = _fri_inst->getFrmKRLInt(15);
+	if (_friInternalCommandMode != tmpCtrlModeFri) {
+		RTT::log(RTT::Info) << this->getKinematicChainName() << "::move() noticed a control mode update from " << _friInternalCommandMode << " to " << tmpCtrlModeFri << RTT::endlog();
+		_friInternalCommandMode = tmpCtrlModeFri;
 	}
-//RTT::log(RTT::Info) << "DEBUG1: "<<_fri_inst->getFrmKRLInt(15) <<", "<< (_current_control_mode == ControlModes::JointTorqueCtrl) <<", "<< (_fri_inst->getCurrentControlScheme()==FRI_CTRL_JNT_IMP)<<RTT::endlog();
-	/*if(_fri_inst->getQuality()!= FRI_QUALITY::FRI_QUALITY_PERFECT){
-
-	 return;
-	 }*/
 
 	// only run when KRC is in command mode.
-	if (_fri_inst->getFrmKRLInt(15) == 20) {
-		//RTT::log(RTT::Info) << "in CMD MODE"<< RTT::endlog();
+	if (_friInternalCommandMode == 20) {
+
+		// TODO only send a command if we also received something?!
+		if (!recieved) {
+			RTT::log(RTT::Warning)
+				<< this->getKinematicChainName()
+				<< "::move() didn't receive any data! Skipping!" << RTT::endlog();
+			_fri_inst->doSendData();
+			return; // Strange????
+		}
+
+		// TODO only send a command if the quality is still good?!
+		FRI_QUALITY q = _fri_inst->getQuality();
+		if (q < 2) {
+			RTT::log(RTT::Critical)
+				<< this->getKinematicChainName() << "::move() bad quality! " << q
+				<< " < 2 Skipping!" << RTT::endlog();
+			_fri_inst->doSendData();
+			return;
+		}
+		//RTT::log(RTT::Info) << "DEBUG1: "<<_fri_inst->getFrmKRLInt(15) <<", "<< (_current_control_mode == ControlModes::JointTorqueCtrl) <<", "<< (_fri_inst->getCurrentControlScheme()==FRI_CTRL_JNT_IMP)<<RTT::endlog();
+		/*if(_fri_inst->getQuality()!= FRI_QUALITY::FRI_QUALITY_PERFECT){
+
+		return;
+		}*/
 
 		// check the currently active control mode.
 		// TODO we could also verify it from fri again.
@@ -524,16 +577,28 @@ void KinematicChain::move() {
 			// TODO why?? if debug is active set the torque command to zero, and let kuka compensate for gravity.
 			if (debug) {
 				_joint_trq.setZero();
-				if (in_trqModeJntImpedance_flow != RTT::NoData) {
+				if (_overrideFakeImpedance) {
 					_fri_inst->doJntImpedanceControl(_fri_inst->getMsrMsrJntPosition(), trqModeJntImpedance.stiffness.data(), trqModeJntImpedance.damping.data(), _joint_trq.data(), false);
 				} else {
-					_fri_inst->doJntImpedanceControl(_fri_inst->getMsrMsrJntPosition(), zero_vector, zero_vector, _joint_trq.data(), false);
+					if (in_trqModeJntImpedance_flow != RTT::NoData) {
+						_fri_inst->doJntImpedanceControl(_fri_inst->getMsrMsrJntPosition(), trqModeJntImpedance.stiffness.data(), trqModeJntImpedance.damping.data(), _joint_trq.data(), false);
+					} else {
+						_fri_inst->doJntImpedanceControl(_fri_inst->getMsrMsrJntPosition(), zero_vector, zero_vector, _joint_trq.data(), false);
+					}
 				}
 			} else {
 				if (torque_controller->joint_cmd_fs != RTT::NoData) {
 					// TODO try to implement a smooth transition!!!! DLW
-					_fri_inst->doJntImpedanceControl(_fri_inst->getMsrMsrJntPosition(), zero_vector, zero_vector, _joint_trq.data(), false);
-
+					//_fri_inst->doJntImpedanceControl(_fri_inst->getMsrMsrJntPosition(), zero_vector, zero_vector, _joint_trq.data(), false);
+					if (_overrideFakeImpedance) {
+						_fri_inst->doJntImpedanceControl(_fri_inst->getMsrMsrJntPosition(), trqModeJntImpedance.stiffness.data(), trqModeJntImpedance.damping.data(), _joint_trq.data(), false);
+					} else {
+						if (in_trqModeJntImpedance_flow != RTT::NoData) {
+							_fri_inst->doJntImpedanceControl(_fri_inst->getMsrMsrJntPosition(), trqModeJntImpedance.stiffness.data(), trqModeJntImpedance.damping.data(), _joint_trq.data(), false);
+						} else {
+							_fri_inst->doJntImpedanceControl(_fri_inst->getMsrMsrJntPosition(), zero_vector, zero_vector, _joint_trq.data(), false);
+						}
+					}
 					// Call to data exchange - and the like 
 					// friInst.doJntImpedanceControl(NULL,//newJntVals, 
 					// 			  newJntStiff, 
@@ -564,17 +629,29 @@ void KinematicChain::move() {
 				_fri_inst->doJntImpedanceControl(_joint_pos.data(), _joint_stiff.data(), _joint_damp.data(), _joint_trq.data(), false);
 			}
 		}
+		// we need to do this manually, because we use e.g., doJntImpedanceControl with flagDataExchange = false.
+		_fri_inst->doSendData();
 	} else {
-
-		//if not in command mode run keep the jntPosition updated, required by FRI
+		RTT::log(RTT::Warning)
+			<< this->getKinematicChainName()
+			<< "::move() whyyyyy not in command mode?! And updating strange stuff?" << RTT::endlog();
+		// if not in command mode run keep the jntPosition updated, required
+		// by FRI
 		// TODO DLW dunno, could be a cause of error. Needs investigation.
-		for (int i = 0; i < LBR_MNJ; i++) {
-			_fri_inst->getCmdBuf().cmd.jntPos[i] = _fri_inst->getMsrBuf().data.cmdJntPos[i] + _fri_inst->getMsrBuf().data.cmdJntPosFriOffset[i];
-		}
+		/*for (int i = 0; i < LBR_MNJ; i++) {
+			_fri_inst->getCmdBuf().cmd.jntPos[i] =
+				_fri_inst->getMsrBuf().data.cmdJntPos[i] +
+				_fri_inst->getMsrBuf().data.cmdJntPosFriOffset[i];
+
+			RTT::log(RTT::Warning)
+				<< this->getKinematicChainName()
+				<< "::move() _fri_inst->getCmdBuf().cmd.jntPos[" << i << "] = " << _fri_inst->getCmdBuf().cmd.jntPos[i] << RTT::endlog();
+        }*/
+		// not sure if I need to do this?!
+		_fri_inst->doReceiveData();
 	}
 
-	// we need to do this manually, because we use e.g., doJntImpedanceControl with flagDataExchange = false.
-	_fri_inst->doSendData();
+	RTT::log(RTT::Debug) << this->getKinematicChainName() << "::move() Took " << RTT::os::TimeService::Instance()->secondsSince(time_start) << " seconds." << RTT::endlog();
 }
 
 std::string KinematicChain::printKinematicChainInformation() {
@@ -594,6 +671,9 @@ std::string KinematicChain::printKinematicChainInformation() {
 	info << "    Control Modes:  [ " << controller_names_stream.str() << "]"
 			<< std::endl;
 	info << "    Current Control Mode: " << _current_control_mode << std::endl;
+	info << "    Impedance: Stiffness = " << trqModeJntImpedance.stiffness << std::endl;
+	info << "    Impedance: Damping = " << trqModeJntImpedance.damping << std::endl;
+	info << "    overrideFakeImpedance = " << _overrideFakeImpedance << std::endl;
 
 	return info.str();
 }
@@ -632,7 +712,7 @@ void KinematicChain::setDebug(bool g) {
 	debug = g;
 }
 
-void KinematicChain::setTrqFakeImpedance(rstrt::dynamics::JointImpedance imp) {
+void KinematicChain::setTrqFakeImpedance(rstrt::dynamics::JointImpedance imp, bool fakeImpedance) {
 	trqModeJntImpedance = imp;
-	in_trqModeJntImpedance_flow = RTT::NewData;
+	_overrideFakeImpedance = fakeImpedance;
 }
