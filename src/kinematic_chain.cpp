@@ -515,33 +515,31 @@ void KinematicChain::move() {
 		_friInternalCommandMode = tmpCtrlModeFri;
 	}
 
+	// TODO only send a command if we also received something?!
+	if (!recieved) {
+		RTT::log(RTT::Warning)
+			<< this->getKinematicChainName()
+			<< "::move() didn't receive any data! doSendData() and Skipping!" << RTT::endlog();
+		_fri_inst->doSendData();
+		return; // Strange????
+	}
+
+	// TODO only send a command if the quality is still good?!
+	FRI_QUALITY q = _fri_inst->getQuality();
+	if (q < 2) {
+		RTT::log(RTT::Critical)
+			<< this->getKinematicChainName() << "::move() bad quality! " << q
+			<< " < 2 doSendData() and Skipping!" << RTT::endlog();
+		_fri_inst->doSendData();
+		return;
+	}
+	//RTT::log(RTT::Info) << "DEBUG1: "<<_fri_inst->getFrmKRLInt(15) <<", "<< (_current_control_mode == ControlModes::JointTorqueCtrl) <<", "<< (_fri_inst->getCurrentControlScheme()==FRI_CTRL_JNT_IMP)<<RTT::endlog();
+	/*if(_fri_inst->getQuality()!= FRI_QUALITY::FRI_QUALITY_PERFECT){
+
+	return;
+	}*/
 	// only run when KRC is in command mode.
 	if (_friInternalCommandMode == 20) {
-
-		// TODO only send a command if we also received something?!
-		if (!recieved) {
-			RTT::log(RTT::Warning)
-				<< this->getKinematicChainName()
-				<< "::move() didn't receive any data! Skipping!" << RTT::endlog();
-			_fri_inst->doSendData();
-			return; // Strange????
-		}
-
-		// TODO only send a command if the quality is still good?!
-		FRI_QUALITY q = _fri_inst->getQuality();
-		if (q < 2) {
-			RTT::log(RTT::Critical)
-				<< this->getKinematicChainName() << "::move() bad quality! " << q
-				<< " < 2 Skipping!" << RTT::endlog();
-			_fri_inst->doSendData();
-			return;
-		}
-		//RTT::log(RTT::Info) << "DEBUG1: "<<_fri_inst->getFrmKRLInt(15) <<", "<< (_current_control_mode == ControlModes::JointTorqueCtrl) <<", "<< (_fri_inst->getCurrentControlScheme()==FRI_CTRL_JNT_IMP)<<RTT::endlog();
-		/*if(_fri_inst->getQuality()!= FRI_QUALITY::FRI_QUALITY_PERFECT){
-
-		return;
-		}*/
-
 		// check the currently active control mode.
 		// TODO we could also verify it from fri again.
 		if (_current_control_mode == ControlModes::JointPositionCtrl) {
