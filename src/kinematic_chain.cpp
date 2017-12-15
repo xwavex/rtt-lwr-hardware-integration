@@ -355,7 +355,7 @@ bool KinematicChain::sense() {
 	}
 
 	if (_friInternalCommandMode < 10) {
-		RTT::log(RTT::Warning) << this->getKinematicChainName() << "::sense() not in monitor mode! _fri_inst->getFrmKRLInt(15) = " << _fri_inst->getFrmKRLInt(15) << " Skipping!" << RTT::endlog();
+		// RTT::log(RTT::Warning) << this->getKinematicChainName() << "::sense() not in monitor mode! _fri_inst->getFrmKRLInt(15) = " << _fri_inst->getFrmKRLInt(15) << " Skipping!" << RTT::endlog();
 		return false;
 	}
 	/*if (_fri_inst->getCurrentControlScheme()!=FRI_CTRL_JNT_IMP){
@@ -509,12 +509,6 @@ void KinematicChain::stop() {
 void KinematicChain::move() {
 	RTT::nsecs time_start = RTT::os::TimeService::Instance()->getNSecs();
 
-	int tmpCtrlModeFri = _fri_inst->getFrmKRLInt(15);
-	if (_friInternalCommandMode != tmpCtrlModeFri) {
-		RTT::log(RTT::Info) << this->getKinematicChainName() << "::move() noticed a control mode update from " << _friInternalCommandMode << " to " << tmpCtrlModeFri << RTT::endlog();
-		_friInternalCommandMode = tmpCtrlModeFri;
-	}
-
 	// TODO only send a command if we also received something?!
 	if (!recieved) {
 		RTT::log(RTT::Warning)
@@ -538,6 +532,11 @@ void KinematicChain::move() {
 
 	return;
 	}*/
+	int tmpCtrlModeFri = _fri_inst->getFrmKRLInt(15);
+	if (_friInternalCommandMode != tmpCtrlModeFri) {
+		RTT::log(RTT::Info) << this->getKinematicChainName() << "::move() noticed a control mode update from " << _friInternalCommandMode << " to " << tmpCtrlModeFri << RTT::endlog();
+		_friInternalCommandMode = tmpCtrlModeFri;
+	}
 	// only run when KRC is in command mode.
 	if (_friInternalCommandMode == 20) {
 		// check the currently active control mode.
@@ -626,28 +625,29 @@ void KinematicChain::move() {
 			if (torque_controller->joint_cmd_fs != RTT::NoData) {
 				_fri_inst->doJntImpedanceControl(_joint_pos.data(), _joint_stiff.data(), _joint_damp.data(), _joint_trq.data(), false);
 			}
-		}
-		// we need to do this manually, because we use e.g., doJntImpedanceControl with flagDataExchange = false.
-		_fri_inst->doSendData();
+		}	
 	} else {
-		RTT::log(RTT::Warning)
-			<< this->getKinematicChainName()
-			<< "::move() whyyyyy not in command mode?! And updating strange stuff?" << RTT::endlog();
+		// RTT::log(RTT::Warning)
+		// 	<< this->getKinematicChainName()
+		// 	<< "::move() whyyyyy not in command mode?! And updating strange stuff?" << RTT::endlog();
 		// if not in command mode run keep the jntPosition updated, required
 		// by FRI
 		// TODO DLW dunno, could be a cause of error. Needs investigation.
-		/*for (int i = 0; i < LBR_MNJ; i++) {
+		for (int i = 0; i < LBR_MNJ; i++) {
 			_fri_inst->getCmdBuf().cmd.jntPos[i] =
 				_fri_inst->getMsrBuf().data.cmdJntPos[i] +
 				_fri_inst->getMsrBuf().data.cmdJntPosFriOffset[i];
 
-			RTT::log(RTT::Warning)
-				<< this->getKinematicChainName()
-				<< "::move() _fri_inst->getCmdBuf().cmd.jntPos[" << i << "] = " << _fri_inst->getCmdBuf().cmd.jntPos[i] << RTT::endlog();
-        }*/
+			// RTT::log(RTT::Warning)
+			// 	<< this->getKinematicChainName()
+			// 	<< "::move() _fri_inst->getCmdBuf().cmd.jntPos[" << i << "] = " << _fri_inst->getCmdBuf().cmd.jntPos[i] << RTT::endlog();
+        }
 		// not sure if I need to do this?!
-		_fri_inst->doReceiveData();
+		//_fri_inst->doReceiveData();
 	}
+
+	// we need to do this manually, because we use e.g., doJntImpedanceControl with flagDataExchange = false.
+	_fri_inst->doSendData();
 
 	RTT::log(RTT::Debug) << this->getKinematicChainName() << "::move() Took " << RTT::os::TimeService::Instance()->secondsSince(time_start) << " seconds." << RTT::endlog();
 }
