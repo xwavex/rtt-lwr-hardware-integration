@@ -6,6 +6,7 @@
 #include <rst-rt/kinematics/JointVelocities.hpp>
 #include <rst-rt/dynamics/JointTorques.hpp>
 #include <rst-rt/dynamics/JointImpedance.hpp>
+#include <rst-rt/dynamics/Wrench.hpp>
 #include <rst-rt/robot/JointState.hpp>
 
 #include <friremote_rt.h>
@@ -32,7 +33,7 @@ class KinematicChain {
 public:
     /**
      * Contructor to set up a kinematic chain.
-     * 
+     *
      * @param chain_name name of the chain.
      * @param joint_names list o joint names.
      * @param ports pointer to the ports of the enclosing component.
@@ -68,17 +69,17 @@ public:
     boost::shared_ptr<torque_ctrl> torque_controller;
 
     boost::shared_ptr<full_fbk> full_feedback;
-    
+
     // When false Gravity is removed from kuka
     // when true kuka compensates itself
     void setGravity(bool g);
 
     // if true zeros all output torques (grav comp mode)
     void setDebug(bool g);
-    
+
     // set the fake impedance for debugging.
     void setTrqFakeImpedance(rstrt::dynamics::JointImpedance imp, bool fakeImpedance);
-    
+
 private:
 
     RTT::nsecs time_now, last_time;
@@ -103,6 +104,9 @@ private:
     RTT::OutputPort<Eigen::Matrix<float,7,7>> output_M_port;
     RTT::OutputPort<rstrt::dynamics::JointTorques> estExtTorques_port;
     rstrt::dynamics::JointTorques estExtTorques;
+    RTT::OutputPort<rstrt::dynamics::Wrench> estExtTcpWrench_port;
+    rstrt::dynamics::Wrench estExtTcpWrench;
+    Eigen::VectorXf estExtTcpWrench_vec;
     Eigen::Matrix<float,7,7> output_M_var;
     bool include_gravity;
 

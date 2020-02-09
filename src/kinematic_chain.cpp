@@ -15,7 +15,7 @@ KinematicChain::KinematicChain(const std::string& chain_name,
 
 	// store pointer for _fri_inst.
 	this->_fri_inst = friInst;
-	
+
 	// convert an IP address to human-readable form and back.
 	char inet_addr_str_chars[INET_ADDRSTRLEN];
 	inet_ntop(AF_INET, &(_fri_inst->remote.krcAddr.sin_addr), inet_addr_str_chars, INET_ADDRSTRLEN);
@@ -45,12 +45,24 @@ KinematicChain::KinematicChain(const std::string& chain_name,
 	// initialize the variable for the estimated external torques.
 	estExtTorques = rstrt::dynamics::JointTorques(_joint_names.size());
 	estExtTorques.torques.setZero();
-	estExtTorques_port.setName("est_ext_torque");
+	std::string temp_str = chain_name;
+	temp_str.append("_est_ext_torque");
+	estExtTorques_port.setName(temp_str);
 	estExtTorques_port.setDataSample(estExtTorques);
+	_ports.addPort(estExtTorques_port);
+
+	// initialize the variable for the estimated external TCP wrench.
+	estExtTcpWrench = rstrt::dynamics::Wrench();
+	estExtTcpWrench_vec = Eigen::VectorXf(6);
+	temp_str = chain_name;
+	temp_str.append("_est_ext_tcp_wrench");
+	estExtTcpWrench_port.setName(temp_str);
+	estExtTcpWrench_port.setDataSample(estExtTcpWrench);
+	_ports.addPort(estExtTcpWrench_port);
 
 	// initialize the output of the inertial matrix.
 	output_M_var.setZero();
-	std::string temp_str = chain_name;
+	temp_str = chain_name;
 	temp_str.append("_output_M");
 	output_M_port.setName(temp_str);
 	output_M_port.setDataSample(output_M_var);
@@ -67,7 +79,7 @@ KinematicChain::KinematicChain(const std::string& chain_name,
 	// initialize variable to include the gravity.
 	include_gravity = true;
 
-	// initialize the gravity compensation term coming from the robot. 
+	// initialize the gravity compensation term coming from the robot.
 	gravity_torques = rstrt::dynamics::JointTorques(_joint_names.size());
 	gravity_torques.torques.setZero();
 	gravity_port.setName("out_gravity_port");
@@ -406,7 +418,7 @@ bool KinematicChain::sense() {
 			full_feedback->joint_feedback.torques(i) = _fri_inst->getMsrJntTrq()[i];
 			//full_feedback->joint_feedback.torques(i) =_fri_inst->getMsrBuf().data.gravity[i];
 		}
-		
+
 		// get inertial matrix from fri.
 		output_M_port.write(Eigen::Map<Eigen::Matrix<float, 7, 7>>(_fri_inst->getMsrBuf().data.massMatrix));
 
@@ -414,6 +426,16 @@ bool KinematicChain::sense() {
 		estExtTorques.torques = Eigen::Map<Eigen::VectorXf>(_fri_inst->getMsrBuf().data.estExtJntTrq, 7, 1);
 		// write the est.ext torques to the output port.
 		estExtTorques_port.write(estExtTorques);
+
+		// get estimated external wrench at the TCP (i.e. $STIFFNESS.TASKFRAME) from fri.
+		estExtTcpWrench_vec = Eigen::Map<Eigen::VectorXf>(_fri_inst->getMsrBuf().data.estExtTcpFT, 6, 1);
+		estExtTcpWrench.forces(0) = estExtTcpWrench_vec(0);
+		estExtTcpWrench.forces(1) = estExtTcpWrench_vec(1);
+		estExtTcpWrench.forces(2) = estExtTcpWrench_vec(2);
+		estExtTcpWrench.torques(0) = estExtTcpWrench_vec(3);
+		estExtTcpWrench.torques(1) = estExtTcpWrench_vec(4);
+		estExtTcpWrench.torques(2) = estExtTcpWrench_vec(5);
+		estExtTcpWrench_port.write(estExtTcpWrench);
 
 		// get the gravity compoensation torques from fri.
 		gravity_torques.torques = Eigen::Map<Eigen::VectorXf>(_fri_inst->getMsrBuf().data.gravity, 7, 1);
@@ -596,11 +618,11 @@ void KinematicChain::move() {
 							_fri_inst->doJntImpedanceControl(_fri_inst->getMsrMsrJntPosition(), zero_vector, zero_vector, _joint_trq.data(), false);
 						}
 					}
-					// Call to data exchange - and the like 
-					// friInst.doJntImpedanceControl(NULL,//newJntVals, 
-					// 			  newJntStiff, 
-					// 			  newJntDamp, 
-					// 			  newJntAddTorque, 
+					// Call to data exchange - and the like
+					// friInst.doJntImpedanceControl(NULL,//newJntVals,
+					// 			  newJntStiff,
+					// 			  newJntDamp,
+					// 			  newJntAddTorque,
 					// 			  false);
 				}
 			}
@@ -625,7 +647,7 @@ void KinematicChain::move() {
 			if (torque_controller->joint_cmd_fs != RTT::NoData) {
 				_fri_inst->doJntImpedanceControl(_joint_pos.data(), _joint_stiff.data(), _joint_damp.data(), _joint_trq.data(), false);
 			}
-		}	
+		}
 	} else {
 		// RTT::log(RTT::Warning)
 		// 	<< this->getKinematicChainName()
